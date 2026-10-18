@@ -1,3 +1,10 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
 <title>Patio 3D Preview</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -58,18 +65,38 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .pad button:active,.pad button.held{background:var(--on);color:var(--onink);border-color:var(--on)}
 .pad svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .pad .gap{visibility:hidden}
+/* hide / show the controls: a side panel on desktop, a pull-up sheet on phones */
+.panel{position:relative}
+.hidebtn{position:absolute;top:14px;right:12px;width:30px;height:30px;padding:0;display:grid;place-items:center;border-radius:6px}
+.hidebtn svg,.openbtn svg,.sheet-bar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.openbtn{position:absolute;top:12px;left:max(12px,env(safe-area-inset-left,0px));display:none;align-items:center;gap:6px;z-index:6;
+  background:color-mix(in srgb,var(--panel) 92%,transparent);box-shadow:0 1px 3px rgba(0,0,0,.18);padding:7px 11px;border-radius:8px}
+body.closed .panel{display:none}
+body.closed .openbtn{display:flex}
+.sheet-bar{display:none}
 #err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
 @media (max-width:760px){
-  body{flex-direction:column-reverse}
-  #stage{flex:none;height:58vh}
-  .panel{width:auto;flex:1;border-right:0;border-top:1px solid var(--rule);padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:max(16px,env(safe-area-inset-left,0px))}
+  body{display:block}
+  #stage{position:fixed;inset:0;height:100vh;height:100dvh}
+  .panel{position:fixed;left:0;right:0;bottom:0;z-index:10;width:auto;max-height:72vh;max-height:72dvh;border-right:0;border-top:1px solid var(--rule);
+    border-radius:14px 14px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.18);padding-top:0;padding-bottom:max(18px,env(safe-area-inset-bottom,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));padding-left:max(16px,env(safe-area-inset-left,0px));transition:transform .25s ease;overscroll-behavior:contain}
+  body.closed .panel{display:flex;transform:translateY(calc(100% - 50px))}
+  body.closed .openbtn,.hidebtn{display:none}
+  .sheet-bar{display:flex;position:sticky;top:0;z-index:2;align-items:center;justify-content:center;gap:8px;width:calc(100% + 32px);margin:0 -16px;
+    height:50px;flex:none;border:0;border-radius:14px 14px 0 0;background:var(--panel);font:600 13px var(--f-body);text-align:center}
+  .sheet-bar::before{content:"";position:absolute;top:7px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--rule)}
+  .sheet-bar svg{transition:transform .25s}
+  body:not(.closed) .sheet-bar svg{transform:rotate(180deg)}
   .views{grid-template-columns:1fr 1fr 1fr}
   .hint{bottom:auto;top:10px;max-width:calc(100% - 24px);font-size:11.5px;padding:4px 8px}
-  .pad{grid-template-columns:repeat(4,38px);grid-auto-rows:38px;gap:5px;right:10px;bottom:10px}
+  .pad{grid-template-columns:repeat(4,38px);grid-auto-rows:38px;gap:5px;right:10px;bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 }
 </style>
 
-<aside class="panel" aria-label="Model controls">
+<aside class="panel" id="panel" aria-label="Model controls">
+  <button class="sheet-bar" id="sheetBar" aria-controls="panel" aria-expanded="false">Controls <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg></button>
+  <button class="hidebtn" id="hideBtn" aria-label="Hide controls" title="Hide controls"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 4L6 8l4 4"/></svg></button>
   <div>
     <h1 id="ttl">Rear Patio</h1>
     <div class="sub" id="subttl">All Granite · Powell, OH</div>
@@ -173,6 +200,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <p class="note">Layout from the drawings. Block colors from Unilock&rsquo;s photos. Sun positions are calculated for Powell, OH, with the back of the house facing north. Windows on the house are placeholders.</p>
 </aside>
 <div id="stage">
+  <button class="openbtn" id="openBtn" aria-controls="panel"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>Controls</button>
   <div class="hint" id="hint"></div>
   <div class="dims" id="dims" aria-hidden="true"></div>
   <div class="pad" id="pad" role="group" aria-label="Move the camera">
@@ -677,6 +705,7 @@ function applyLook(){camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0
 // on a tall phone screen keep at least ~60 degrees of view side to side
 function baseFov(){const a=camera.aspect||1.5;return a>=1.2?50:Math.min(78,2*Math.atan(Math.tan(30*Math.PI/180)/a)*180/Math.PI);}
 function go(name,instant){const v=V[name];const p=new T.Vector3(...v.p),t=new T.Vector3(...v.t);
+  if(ORBIT_VIEWS[name]&&camera.aspect<1)p.sub(t).multiplyScalar(Math.min(1.6,1.15/camera.aspect)).add(t);   // back the aerial views off on a tall phone so the whole patio fits
   $$('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===name));
   const m=ORBIT_VIEWS[name]?'orbit':'eye'; camera.fov=m==='eye'?baseFov():50; camera.updateProjectionMatrix();
   if(instant||matchMedia('(prefers-reduced-motion: reduce)').matches){camera.position.copy(p);controls.target.copy(t);camera.lookAt(t);setMode(m);syncLook();if(m==='orbit')controls.update();return;}
@@ -982,6 +1011,16 @@ function dimTick(){const w=stage.clientWidth,h=stage.clientHeight,placed=[];
     const r=[x-d.w/2-3,y-d.h/2-2,x+d.w/2+3,y+d.h/2+2];
     if(placed.some(q=>r[0]<q[2]&&r[2]>q[0]&&r[1]<q[3]&&r[3]>q[1])){d.el.style.display='none';return;}
     placed.push(r);d.el.style.display='block';d.el.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;});}
+// controls start tucked away on phones (the sheet peeks at the bottom) and open on wider screens
+(function(){const phone=matchMedia('(max-width:760px)'),bar=document.getElementById('sheetBar'),panel=document.getElementById('panel');
+ const set=closed=>{document.body.classList.toggle('closed',closed);bar.setAttribute('aria-expanded',!closed);if(!closed&&phone.matches)panel.scrollTop=0;};
+ set(phone.matches);
+ bar.addEventListener('click',()=>set(!document.body.classList.contains('closed')));
+ document.getElementById('hideBtn').addEventListener('click',()=>set(true));
+ document.getElementById('openBtn').addEventListener('click',()=>set(false));
+ phone.addEventListener('change',e=>set(e.matches));
+ // on a phone, picking a view tucks the sheet away so you can see it
+ $$('[data-view]').forEach(b=>b.addEventListener('click',()=>{if(phone.matches)set(true);}));})();
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 new ResizeObserver(resize).observe(stage); resize();
 go('aerial',true); applySun();
@@ -1010,3 +1049,6 @@ window.__sun=(s,m)=>{const q=SEASON[s];return sunPos(q.doy,m,q.tz);};
 
 })();
 </script>
+
+</body>
+</html>
