@@ -713,6 +713,7 @@ let mode='eye', yaw=0, pitch=0, look=null;
 const hintEl=document.getElementById('hint');
 const TOUCH=matchMedia('(pointer:coarse)').matches;
 function setMode(m){mode=m;controls.enabled=m==='orbit';
+  if(typeof eggOn!=='undefined'&&eggOn&&m==='eye'){hintEl.innerHTML=(TOUCH?'<b>Drag</b> to look · <b>arrows</b> to lean · <b>pinch</b> to zoom · <b>tap</b> to focus':'<b>Drag</b> to look · <b>W A S D</b> to lean · <b>scroll</b> to zoom · <b>click</b> to focus');return;}
   if(typeof tapeOn!=='undefined'&&tapeOn){hintEl.innerHTML=(TOUCH?'<b>Tap</b>':'<b>Click</b>')+' two points to measure · a third starts over';return;}
   hintEl.innerHTML=TOUCH?(m==='orbit'?'<b>Tap</b> a spot to fly there · <b>drag</b> to orbit · <b>pinch</b> to zoom':'<b>Tap</b> a spot to walk there · <b>drag</b> to look · <b>pinch</b> to zoom')
    :(m==='orbit'?'<b>Click</b> a spot to fly there · <b>drag</b> to orbit · <b>scroll</b> to zoom · <b>right-drag</b> to move':'<b>Click</b> a spot to walk there · <b>drag</b> to look · <b>scroll</b> to zoom · <b>W A S D</b> to walk');}
@@ -738,9 +739,9 @@ controls.addEventListener('start',()=>{anim=null;$$('[data-view]').forEach(b=>b.
  el.addEventListener('pointermove',e=>{if(mode!=='eye'||!pts.has(e.pointerId))return;const p=pts.get(e.pointerId);
    if(pts.size===1){const k=0.0032*camera.fov/50;yaw+=(e.clientX-p.x)*k;pitch=Math.max(-1.35,Math.min(1.35,pitch+(e.clientY-p.y)*k));applyLook();}
    p.x=e.clientX;p.y=e.clientY;
-   if(pts.size===2){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);camera.fov=Math.max(22,Math.min(90,fov0*pinch0/Math.max(d,1)));camera.updateProjectionMatrix();}});
+   if(pts.size===2){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);camera.fov=Math.max(eggOn?8:22,Math.min(90,fov0*pinch0/Math.max(d,1)));camera.updateProjectionMatrix();}});
  const up=e=>{pts.delete(e.pointerId);};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
- el.addEventListener('wheel',e=>{if(mode!=='eye')return;e.preventDefault();camera.fov=Math.max(22,Math.min(90,camera.fov+e.deltaY*0.03));camera.updateProjectionMatrix();},{passive:false});
+ el.addEventListener('wheel',e=>{if(mode!=='eye')return;e.preventDefault();camera.fov=Math.max(eggOn?8:22,Math.min(90,camera.fov+e.deltaY*0.03));camera.updateProjectionMatrix();},{passive:false});
 })();
 // tap / click a spot: in the aerial views the camera glides so that spot becomes the centre you orbit around;
 // in the eye-level views you walk to it (standing on it if it's floor or lawn, stopping short if it's a wall or furniture)
@@ -755,6 +756,7 @@ let glide=null;
    if(!hit)return; if(!tapeOn){anim=null; $$('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));}
    const p=hit.point, n=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld):new T.Vector3(0,1,0);
    if(tapeOn){tapeTap(p);return;}
+   if(eggOn&&mode==='eye'){eggLook(p);return;}
    if(mode==='orbit'){const delta=p.clone().sub(controls.target);glide={t0:controls.target.clone(),p0:camera.position.clone(),delta,s:performance.now()};}
    else{let to;
      if(n.y>0.6&&p.y<2.2) to=new T.Vector3(p.x,p.y+EYE,p.z);
@@ -764,7 +766,7 @@ let glide=null;
 // on-screen pad: press and hold. Aerial: arrows slide across the ground, curved arrows circle, +/- zoom. Eye level: arrows walk, curved arrows turn, +/- zoom.
 const held=new Set();
 $$('#pad [data-act]').forEach(b=>{const a=b.dataset.act;
-  const on=e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId);}catch(_){}held.add(a);b.classList.add('held');anim=null;glide=null;$$('[data-view]').forEach(x=>x.setAttribute('aria-pressed','false'));};
+  const on=e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId);}catch(_){}held.add(a);b.classList.add('held');anim=null;glide=null;if(!eggOn)$$('[data-view]').forEach(x=>x.setAttribute('aria-pressed','false'));};
   const off=()=>{held.delete(a);b.classList.remove('held');};
   b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off);
   b.addEventListener('contextmenu',e=>e.preventDefault());});
@@ -781,7 +783,7 @@ function padTick(dt){if(!held.size)return;const s=dt/1000;
     if(held.has('fwd'))camera.position.addScaledVector(f,sp); if(held.has('back'))camera.position.addScaledVector(f,-sp);
     if(held.has('right'))camera.position.addScaledVector(r,sp); if(held.has('left'))camera.position.addScaledVector(r,-sp);
     const rot=(held.has('rotL')?1:0)-(held.has('rotR')?1:0);if(rot){yaw+=rot*1.2*s;applyLook();}
-    const z=(held.has('zout')?1:0)-(held.has('zin')?1:0);if(z){camera.fov=Math.max(22,Math.min(90,camera.fov+z*30*s));camera.updateProjectionMatrix();}}}
+    const z=(held.has('zout')?1:0)-(held.has('zin')?1:0);if(z){camera.fov=Math.max(eggOn?8:22,Math.min(90,camera.fov+z*30*s));camera.updateProjectionMatrix();}}}
 const keys=new Set();
 addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,button'))return;const k=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){keys.add(k);e.preventDefault();}});
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -1051,29 +1053,43 @@ const nbr=new T.Group(); nbr.visible=false; scene.add(nbr);
  [[-10.2,24.4,1.4],[-10.0,30.6,1.7],[-10.4,36,1.2]].forEach(([bx,bz,r])=>{const g=new T.SphereGeometry(r,14,10),p=g.attributes.position;
    for(let i=0;i<p.count;i++){const k=1+.12*Math.sin(p.getX(i)*7+p.getZ(i)*5);p.setXYZ(i,p.getX(i)*k,p.getY(i)*k*.85,p.getZ(i)*k);}g.computeVertexNormals();
    const m=new T.Mesh(g,leaf);m.position.set(bx,ground(bz)+r*.7,bz);nbr.add(m);});})();
-// second egg: triple-tap "West side" -- the west neighbor at their upstairs window, curtain pulled back, looking down
-V.upstairs={p:[51.2,15.6,-4.9],t:[24,1.2,11.5]};
-const up=new T.Group(); up.visible=false; scene.add(up);
-(function(){const wall=new T.MeshStandardMaterial({color:0xd9d0c1,roughness:.9}), trim=new T.MeshStandardMaterial({color:0xf3f1ec,roughness:.6});
- const cur=new T.MeshStandardMaterial({color:0x5a3b3b,roughness:1,side:T.DoubleSide});
- const X0=48,X1=48.45,Z0w=-5.2,Z1w=-0.9,Y0w=12.6,Y1w=18,P={parent:up,cast:false};
- box(X0,X1,4,Y0w,-22,6,wall,P); box(X0,X1,Y1w,26,-22,6,wall,P); box(X0,X1,Y0w,Y1w,-22,Z0w,wall,P); box(X0,X1,Y0w,Y1w,Z1w,6,wall,P);
- box(X1,X1+.12,Y0w-.25,Y0w,Z0w-.25,Z1w+.25,trim,P); box(X1,X1+.5,Y0w-.05,Y0w+.08,Z0w-.3,Z1w+.3,trim,P);                // sill
- box(X1,X1+.12,Y1w,Y1w+.25,Z0w-.25,Z1w+.25,trim,P); box(X1,X1+.12,Y0w,Y1w,Z0w-.25,Z0w,trim,P); box(X1,X1+.12,Y0w,Y1w,Z1w,Z1w+.25,trim,P);
- box(X0+.2,X0+.26,Y0w,Y1w,(Z0w+Z1w)/2-.04,(Z0w+Z1w)/2+.04,trim,P); box(X0+.2,X0+.26,(Y0w+Y1w)/2-.04,(Y0w+Y1w)/2+.04,Z0w,Z1w,trim,P);   // muntins
- box(X1+.55,X1+.62,Y1w+.6,Y1w+.7,Z0w-1.6,Z1w+1.4,new T.MeshStandardMaterial({color:0x2a2a2a,metalness:.6,roughness:.4}),P);           // rod
- // curtains: left one drawn almost shut, right one bunched back -- a sliver of a gap to peer through
- const drape=(z0,z1,ruffle)=>{const w=z1-z0,g=new T.PlaneGeometry(w,Y1w+.6-(Y0w-1.2),24,1),p=g.attributes.position;
-   for(let i=0;i<p.count;i++)p.setZ(i,Math.sin(p.getX(i)/w*Math.PI*ruffle)*.12);g.computeVertexNormals();
-   const m=new T.Mesh(g,cur);m.rotation.y=Math.PI/2;m.position.set(X1+.7,(Y1w+.6+Y0w-1.2)/2,(z0+z1)/2);up.add(m);};
+// upstairs-window eggs: triple-tap "West side" or "East side" -- that neighbor at their upstairs window, curtains
+// pulled back, looking down. One builder, mirrored: dir=+1 for the west house (room at x>wall), -1 for the east house.
+function windowRoom(X0,dir){const g=new T.Group(); g.visible=false; scene.add(g);
+ const wall=new T.MeshStandardMaterial({color:0xd9d0c1,roughness:.9}), trim=new T.MeshStandardMaterial({color:0xf3f1ec,roughness:.6});
+ const cur=new T.MeshStandardMaterial({color:dir>0?0x5a3b3b:0x37455a,roughness:1,side:T.DoubleSide});
+ const X1=X0+dir*.45, Z0w=-5.2,Z1w=-0.9,Y0w=12.6,Y1w=18,P={parent:g,cast:false};
+ const bx=(a,b,y0,y1,z0,z1,m)=>box(Math.min(a,b),Math.max(a,b),y0,y1,z0,z1,m,P), at=d=>X1+dir*d;
+ bx(X0,X1,4,Y0w,-22,6,wall); bx(X0,X1,Y1w,26,-22,6,wall); bx(X0,X1,Y0w,Y1w,-22,Z0w,wall); bx(X0,X1,Y0w,Y1w,Z1w,6,wall);
+ bx(X1,at(.12),Y0w-.25,Y0w,Z0w-.25,Z1w+.25,trim); bx(X1,at(.5),Y0w-.05,Y0w+.08,Z0w-.3,Z1w+.3,trim);                 // sill
+ bx(X1,at(.12),Y1w,Y1w+.25,Z0w-.25,Z1w+.25,trim); bx(X1,at(.12),Y0w,Y1w,Z0w-.25,Z0w,trim); bx(X1,at(.12),Y0w,Y1w,Z1w,Z1w+.25,trim);
+ bx(X0+dir*.2,X0+dir*.26,Y0w,Y1w,(Z0w+Z1w)/2-.04,(Z0w+Z1w)/2+.04,trim); bx(X0+dir*.2,X0+dir*.26,(Y0w+Y1w)/2-.04,(Y0w+Y1w)/2+.04,Z0w,Z1w,trim);
+ bx(at(.55),at(.62),Y1w+.6,Y1w+.7,Z0w-1.6,Z1w+1.4,new T.MeshStandardMaterial({color:0x2a2a2a,metalness:.6,roughness:.4}));
+ const drape=(z0,z1,ruffle)=>{const w=z1-z0,gg=new T.PlaneGeometry(w,Y1w+.6-(Y0w-1.2),24,1),p=gg.attributes.position;
+   for(let i=0;i<p.count;i++)p.setZ(i,Math.sin(p.getX(i)/w*Math.PI*ruffle)*.12);gg.computeVertexNormals();
+   const m=new T.Mesh(gg,cur);m.rotation.y=Math.PI/2;m.position.set(at(.7),(Y1w+.6+Y0w-1.2)/2,(z0+z1)/2);g.add(m);};
  drape(Z0w-1.6,Z0w+.55,8); drape(Z1w-.45,Z1w+1.3,7);
-})();
-const EGGS={neighbor:{grp:nbr,label:'Neighbor 👀',msg:'Unlocked: the neighbor’s view'},upstairs:{grp:up,label:'Upstairs 🪟',msg:'Unlocked: the upstairs window'}};
+ return g;}
+V.upstairs={p:[51.2,15.6,-4.9],t:[24,1.2,11.5]};
+V.upstairsE={p:[-19.2,15.6,-4.9],t:[8,1.2,11.5]};
+const up=windowRoom(48,1), upE=windowRoom(-16,-1);
+// each egg: what to show, the overlay, and the little box you can lean around in (x,y,z ranges) -- you can look,
+// lean, zoom and tap-to-focus, but you stay put at the fence or window
+const EGGS={
+  neighbor:{grp:nbr,ov:'peep',label:'Neighbor 👀',msg:'Unlocked: the neighbor’s view',box:[[-13.4,-11.7],[0,0],[25.8,29.4]],tag:'neighbor cam'},
+  upstairs:{grp:up,ov:'win',label:'Upstairs W 🪟',msg:'Unlocked: the west neighbor’s upstairs window',box:[[49.1,52.6],[0,0],[-5.3,-1.0]],tag:'upstairs window · west'},
+  upstairsE:{grp:upE,ov:'win',label:'Upstairs E 🪟',msg:'Unlocked: the east neighbor’s upstairs window',box:[[-20.6,-17.1],[0,0],[-5.3,-1.0]],tag:'upstairs window · east'}};
 const peepEl=document.getElementById('peep'), winEl=document.getElementById('winpeep'), toastEl=document.getElementById('toast');
-let nbrOn=false, nbrBaseY=0, eggOn=null;
+var nbrOn=false, nbrBaseY=0, eggOn=null, lookAnim=null;
 function setNeighbor(on){setEgg(on?'neighbor':null);}
-function setEgg(name){eggOn=name;nbrOn=!!name;Object.entries(EGGS).forEach(([k,e])=>e.grp.visible=k===name);
-  peepEl.classList.toggle('on',name==='neighbor');winEl.classList.toggle('on',name==='upstairs');if(name)nbrBaseY=V[name].p[1];}
+function setEgg(name){eggOn=name;nbrOn=!!name;Object.entries(EGGS).forEach(([k,e])=>e.grp.visible=k===name);const E=EGGS[name];
+  peepEl.classList.toggle('on',!!E&&E.ov==='peep');winEl.classList.toggle('on',!!E&&E.ov==='win');
+  if(E){nbrBaseY=V[name].p[1];winEl.querySelector('.tag').textContent=E.tag;}setMode(mode);}
+// keep the snoop at their post: clamp position to the egg's box after any movement
+function eggClamp(){const b=EGGS[eggOn].box,p=camera.position;p.x=Math.max(b[0][0],Math.min(b[0][1],p.x));p.z=Math.max(b[2][0],Math.min(b[2][1],p.z));}
+// tap while snooping = swing the view to look at that spot
+function eggLook(pt){const d=pt.clone().sub(camera.position);const y1=Math.atan2(-d.x,-d.z),p1=Math.atan2(d.y,Math.hypot(d.x,d.z));
+  let dy=y1-yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));lookAnim={y0:yaw,p0:pitch,dy,dp:p1-pitch,s:performance.now()};}
 function toast(msg){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>toastEl.classList.remove('on'),2600);}
 function unlockEgg(name,go_){let b=document.querySelector(`[data-view="${name}"]`);
   if(!b){b=document.createElement('button');b.dataset.view=name;b.textContent=EGGS[name].label;document.querySelector('.views').appendChild(b);
@@ -1085,7 +1101,7 @@ Object.keys(EGGS).forEach(k=>{try{if(localStorage.getItem('patio-'+k)==='1')unlo
 (function(){let last=null,n=0,t0=0;
  document.querySelector('.views').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b||EGGS[b.dataset.view])return;
    const now=performance.now();if(b.dataset.view===last&&now-t0<900)n++;else{n=1;last=b.dataset.view;}t0=now;
-   if(n>=3){const egg=b.dataset.view==='west'?'upstairs':'neighbor';n=0;last=null;unlockEgg(egg,true);}});})();
+   if(n>=3){const egg=b.dataset.view==='west'?'upstairs':b.dataset.view==='east'?'upstairsE':'neighbor';n=0;last=null;unlockEgg(egg,true);}});})();
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;document.querySelector('#peep svg').setAttribute('viewBox',w<h?'13 30 74 40':'0 0 100 100');renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 new ResizeObserver(resize).observe(stage); resize();
 go('aerial',true); applySun();
@@ -1103,11 +1119,11 @@ let last=performance.now();
     if(keys.has('s')||keys.has('arrowdown'))camera.position.addScaledVector(f,-sp);
     if(keys.has('d')||keys.has('arrowright'))camera.position.addScaledVector(r,sp);
     if(keys.has('a')||keys.has('arrowleft'))camera.position.addScaledVector(r,-sp);
-    $$('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));}
+    if(!eggOn)$$('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));}
   if(playing){mins+=dt*0.06;if(mins>+clockEl.max)mins=+clockEl.min;clockEl.value=mins;applySun();}
   fireTick(now/1000, lightsOn); dimTick();
-  if(nbrOn&&(glide||held.size||keys.size))setNeighbor(false);          // walk away from the fence and the binoculars come off
-  if(nbrOn&&!anim&&mode==='eye'){camera.position.y=nbrBaseY+Math.sin(now/1000*1.4)*.035;}
+  if(eggOn&&!anim&&mode==='eye'){eggClamp();camera.position.y=nbrBaseY+Math.sin(now/1000*1.4)*.035;
+    if(lookAnim){let k=Math.min(1,(now-lookAnim.s)/450);k=1-Math.pow(1-k,3);yaw=lookAnim.y0+lookAnim.dy*k;pitch=lookAnim.p0+lookAnim.dp*k;applyLook();if(k>=1)lookAnim=null;}}
   if(mode==='orbit'&&!anim)controls.update();renderer.render(scene,camera);})(performance.now());
 
 window.__go=go; window.__camPos=()=>[camera.position.toArray(),yaw,pitch,mode,camera.fov];
