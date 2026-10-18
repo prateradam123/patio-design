@@ -74,6 +74,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 body.closed .panel{display:none}
 body.closed .openbtn{display:flex}
 .sheet-bar{display:none}
+/* easter egg: creepy neighbor view */
+.peep{position:absolute;inset:0;pointer-events:none;display:none;z-index:3}
+.peep.on{display:block}
+.peep svg{width:100%;height:100%}
+.peep .tag{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);font:600 12px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:#d8d8d0;opacity:.85}
+.toast{position:absolute;left:50%;top:56px;transform:translateX(-50%);background:var(--on);color:var(--onink);padding:8px 14px;border-radius:8px;font-size:13px;z-index:7;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.on{opacity:1}
 #err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
 @media (max-width:760px){
   body{display:block}
@@ -203,6 +211,11 @@ body.closed .openbtn{display:flex}
   <button class="openbtn" id="openBtn" aria-controls="panel"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>Controls</button>
   <div class="hint" id="hint"></div>
   <div class="dims" id="dims" aria-hidden="true"></div>
+  <div class="peep" id="peep" aria-hidden="true"><svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 100 100"><defs>
+    <filter id="soft" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="1.4"/></filter>
+    <mask id="eyes" maskUnits="userSpaceOnUse" x="-2000" y="-2000" width="4100" height="4100"><rect x="-2000" y="-2000" width="4100" height="4100" fill="#fff"/><g filter="url(#soft)"><circle cx="33" cy="50" r="19" fill="#000"/><circle cx="67" cy="50" r="19" fill="#000"/></g></mask></defs>
+    <rect x="-2000" y="-2000" width="4100" height="4100" fill="#050505" mask="url(#eyes)"/></svg><div class="tag">neighbor cam</div></div>
+  <div class="toast" id="toast" role="status"></div>
   <div class="pad" id="pad" role="group" aria-label="Move the camera">
     <button data-act="rotL" aria-label="Turn left"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 6a7 7 0 1 1-1.5 6M5 2v4h4"/></svg></button>
     <button data-act="fwd" aria-label="Move forward"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5 10l5-5 5 5"/></svg></button>
@@ -707,6 +720,7 @@ function baseFov(){const a=camera.aspect||1.5;return a>=1.2?50:Math.min(78,2*Mat
 function go(name,instant){const v=V[name];const p=new T.Vector3(...v.p),t=new T.Vector3(...v.t);
   if(ORBIT_VIEWS[name]&&camera.aspect<1)p.sub(t).multiplyScalar(Math.min(1.6,1.15/camera.aspect)).add(t);   // back the aerial views off on a tall phone so the whole patio fits
   $$('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===name));
+  if(typeof setNeighbor==='function')setNeighbor(name==='neighbor');
   const m=ORBIT_VIEWS[name]?'orbit':'eye'; camera.fov=m==='eye'?baseFov():50; camera.updateProjectionMatrix();
   if(instant||matchMedia('(prefers-reduced-motion: reduce)').matches){camera.position.copy(p);controls.target.copy(t);camera.lookAt(t);setMode(m);syncLook();if(m==='orbit')controls.update();return;}
   const d=new T.Vector3();camera.getWorldDirection(d);
@@ -1020,8 +1034,35 @@ function dimTick(){const w=stage.clientWidth,h=stage.clientHeight,placed=[];
  document.getElementById('openBtn').addEventListener('click',()=>set(false));
  phone.addEventListener('change',e=>set(e.matches));
  // on a phone, picking a view tucks the sheet away so you can see it
- $$('[data-view]').forEach(b=>b.addEventListener('click',()=>{if(phone.matches)set(true);}));})();
-function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+ let closeT=0; document.querySelector('.views').addEventListener('click',e=>{if(!e.target.closest('[data-view]')||!phone.matches)return;
+   clearTimeout(closeT);closeT=setTimeout(()=>set(true),700);});})();
+// ---- easter egg: click any view button three times quickly to unlock "Neighbor" -- the east neighbor up on a
+// stepladder behind their privacy fence, binoculars trained on your TV and fire table
+V.neighbor={p:[-12.6,ground(27)+7.1,27.5],t:[26,2.6,11.5]};
+const nbr=new T.Group(); nbr.visible=false; scene.add(nbr);
+(function(){const wood=new T.MeshStandardMaterial({color:0x8a6a4a,roughness:.95}), dark=new T.MeshStandardMaterial({color:0x6e5238,roughness:.95});
+ const x=-11.2;
+ for(let z=14;z<42;z+=0.47){const g=ground(z+.22),b=new T.Mesh(new T.BoxGeometry(.08,6,.44),Math.random()<.3?dark:wood);b.position.set(x,g+3.0,z+.22);b.castShadow=true;nbr.add(b);}
+ [[2.2],[5.4]].forEach(([h])=>{for(let z=14;z<42;z+=4){const r=new T.Mesh(new T.BoxGeometry(.12,.3,4),dark);r.position.set(x-.12,ground(z+2)+h,z+2);nbr.add(r);}});
+ const leaf=new T.MeshStandardMaterial({color:0x2f4a28,roughness:1});
+ [[-10.2,24.4,1.4],[-10.0,30.6,1.7],[-10.4,36,1.2]].forEach(([bx,bz,r])=>{const g=new T.SphereGeometry(r,14,10),p=g.attributes.position;
+   for(let i=0;i<p.count;i++){const k=1+.12*Math.sin(p.getX(i)*7+p.getZ(i)*5);p.setXYZ(i,p.getX(i)*k,p.getY(i)*k*.85,p.getZ(i)*k);}g.computeVertexNormals();
+   const m=new T.Mesh(g,leaf);m.position.set(bx,ground(bz)+r*.7,bz);nbr.add(m);});})();
+const peepEl=document.getElementById('peep'), toastEl=document.getElementById('toast');
+let nbrOn=false, nbrBaseY=0;
+function setNeighbor(on){nbrOn=on;nbr.visible=on;peepEl.classList.toggle('on',on);if(on){nbrBaseY=V.neighbor.p[1];}}
+function toast(msg){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>toastEl.classList.remove('on'),2600);}
+function unlockNeighbor(go_){let b=document.querySelector('[data-view="neighbor"]');
+  if(!b){b=document.createElement('button');b.dataset.view='neighbor';b.textContent='Neighbor 👀';document.querySelector('.views').appendChild(b);
+    b.addEventListener('click',()=>go('neighbor'));}
+  try{localStorage.setItem('patio-neighbor','1');}catch(_){}
+  if(go_){toast('Unlocked: the neighbor’s view');go('neighbor');}}
+try{if(localStorage.getItem('patio-neighbor')==='1')unlockNeighbor(false);}catch(_){}
+(function(){let last=null,n=0,t0=0;
+ document.querySelector('.views').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b||b.dataset.view==='neighbor')return;
+   const now=performance.now();if(b.dataset.view===last&&now-t0<900)n++;else{n=1;last=b.dataset.view;}t0=now;
+   if(n>=3){n=0;last=null;unlockNeighbor(true);}});})();
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;document.querySelector('#peep svg').setAttribute('viewBox',w<h?'13 30 74 40':'0 0 100 100');renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 new ResizeObserver(resize).observe(stage); resize();
 go('aerial',true); applySun();
 let last=performance.now();
@@ -1041,6 +1082,8 @@ let last=performance.now();
     $$('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));}
   if(playing){mins+=dt*0.06;if(mins>+clockEl.max)mins=+clockEl.min;clockEl.value=mins;applySun();}
   fireTick(now/1000, lightsOn); dimTick();
+  if(nbrOn&&(glide||held.size||keys.size))setNeighbor(false);          // walk away from the fence and the binoculars come off
+  if(nbrOn&&!anim&&mode==='eye'){camera.position.y=nbrBaseY+Math.sin(now/1000*1.4)*.035;}
   if(mode==='orbit'&&!anim)controls.update();renderer.render(scene,camera);})(performance.now());
 
 window.__go=go; window.__camPos=()=>[camera.position.toArray(),yaw,pitch,mode,camera.fov];
