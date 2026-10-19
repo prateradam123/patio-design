@@ -376,8 +376,9 @@ M.edge=mat(blockTex('pe_gr',17.75,3.625,4,10,{sppi:9}));
 M.riser=mat(blockTex('pgr',15.75,5.875,4,6,{sppi:9}),.95);
 M.copX=mat(blockTex('endc',23.625,14,4,1,{stack:true,sppi:5,joint:'rgba(20,20,20,.9)'}),.85);
 M.copZ=mat(blockTex('endc',23.625,14,4,1,{stack:true,sppi:5,joint:'rgba(20,20,20,.9)',rotate:true}),.85);
-M.borderX=mat(blockTex('bhdc',7.5,15,8,1,{sppi:8,stack:true}));
-M.borderZ=mat(blockTex('bhdc',7.5,15,8,1,{sppi:8,stack:true,rotate:true}));
+// Unilock Holland Premier, Dark Charcoal: 3-7/8" x 7-7/8", one soldier course (long side across the border), joints lined up
+M.borderX=mat(blockTex('bhdc',3.875,7.875,16,1,{sppi:8,stack:true}));
+M.borderZ=mat(blockTex('bhdc',3.875,7.875,16,1,{sppi:8,stack:true,rotate:true}));
 M.field=mat(tex('gf',4.5));
 const COPZ=[M.copX,M.copX,M.copZ,M.copZ,M.copX,M.copX];
 let SOFA_X=0, LS_SEAT=null, SEC_SET=null; const SWV=[], DINE=[];
@@ -436,8 +437,8 @@ const rockEdges=new T.Group(); scene.add(rockEdges);    // only with the 2' rock
  box(PW,HX1+e,-1.2,ROCKTOP+e,Z0-d,Z0+e,E,o);           // west of the patio, yard side
  box(HX1-d,HX1+e,-1.2,ROCKTOP+e,-.2,Z0-d,E,o);})();    // west end
 
-// patio surface: Granite Fusion field with a Dark Charcoal soldier border (7-1/2" x 15" laid long side in, 15" wide) on all four sides
-const B=15/12, iz1=Z1-WALL;
+// patio surface: Granite Fusion field with one soldier course of Holland Premier Dark Charcoal (7-7/8" wide) on all four sides
+const B=7.875/12, iz1=Z1-WALL;
 box(WALL,PW-WALL,-0.6,0,Z0,iz1,M.field,{cast:false});
 box(WALL,PW-WALL,-0.6,0.02,iz1-B,iz1,M.borderX,{cast:false,uo:WALL,vo:iz1-B});
 const houseBorder=box(WALL,PW-WALL,-0.6,0.02,Z0,Z0+B,M.borderX,{cast:false,uo:WALL,vo:Z0});   // along the river-rock strip
@@ -498,17 +499,14 @@ const secGroup=new T.Group(), lsGroup=new T.Group(); furn.add(secGroup,lsGroup);
 let LS_FX=0;   // fire-table centre (x) in the loveseat + swivels layout
 const PO=5.5/12, POUT=134/12, GXo=[PW-WALL-1-POUT, PW-WALL-1], GZo=[Z1-WALL-1-POUT, Z1-WALL-1];
 const GX=[GXo[0]+PO/2,GXo[1]-PO/2], GZ=[GZo[0]+PO/2,GZo[1]-PO/2], GH=86.5/12, ROOF=12.099, GCX=(GXo[0]+GXo[1])/2, GCZ=(GZo[0]+GZo[1])/2;
-// optional gazebo "rug": Dark Charcoal border pavers framing the gazebo so all four post bases land fully on dark pavers.
-// East + south: a 15" soldier course centred on the post line, running into the perimeter border.
-// West + north: one 7-1/2" sailor row inboard of the perimeter border (the posts are 12" off the walls, so their bases
-// otherwise straddle the border/field seam). Leaves a 9'-5" square of field inside.
+// optional gazebo border: one soldier course of the same Holland Premier squaring off the gazebo. On the west and yard
+// sides the perimeter border already does it (about 4" outside the posts there), so just two runs are added on the
+// east and house sides, the same 4" outside the posts. One course all the way around, no doubled band, no slivers.
 const gzRug=new T.Group(); scene.add(gzRug);
-(function(){const h=B/2, P={cast:false,parent:gzRug}, wb=PW-WALL-B, nb=iz1-B, s=B/2;
- const ex0=GX[0]-h, ex1=GX[0]+h, sz0=GZ[0]-h, sz1=GZ[0]+h;
- box(ex0,ex1,-0.6,0.02,sz0,nb,M.borderZ,{...P,uo:ex0,vo:sz0});                 // east, soldier
- box(ex1,wb,-0.6,0.02,sz0,sz1,M.borderX,{...P,uo:ex1,vo:sz0});                 // south, soldier
- box(wb-s,wb,-0.6,0.02,sz1,nb,M.borderX,{...P,uo:wb-s,vo:sz1});                // west, sailor (15" along the run)
- box(ex1,wb-s,-0.6,0.02,nb-s,nb,M.borderZ,{...P,uo:ex1,vo:nb-s});})();         // north, sailor
+(function(){const P={cast:false,parent:gzRug}, wb=PW-WALL-B, nb=iz1-B, o=wb-GXo[1];
+ const x0=GXo[0]-o-B, z0=GZo[0]-o-B;
+ box(x0,wb,-0.6,0.02,z0,z0+B,M.borderX,{...P,uo:x0,vo:z0});                    // house side
+ box(x0,x0+B,-0.6,0.02,z0+B,nb,M.borderZ,{...P,uo:x0,vo:z0+B});})();           // east
 const GZ_N0=scene.children.length;
 (function(){
  GX.forEach(x=>GZ.forEach(z=>{box(x-PO/2,x+PO/2,0,GH,z-PO/2,z+PO/2,M.cedar);box(x-5/12,x+5/12,0,.35,z-5/12,z+5/12,M.cedar);}));
