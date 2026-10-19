@@ -88,6 +88,14 @@ body.closed .openbtn{display:flex}
 .toast{position:absolute;left:50%;top:56px;transform:translateX(-50%);background:var(--on);color:var(--onink);padding:8px 14px;border-radius:8px;font-size:13px;z-index:7;
   box-shadow:0 2px 8px rgba(0,0,0,.25);opacity:0;transition:opacity .3s;pointer-events:none}
 .toast.on{opacity:1}
+.hbchip{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:6;background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--rule);
+  border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);padding:8px 10px;display:grid;gap:6px;max-width:calc(100% - 24px);font-size:12.5px}
+.hbchip[hidden]{display:none}
+.hbt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbc{font:400 12px/1.35 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--muted)}
+.hbc b{font-weight:500}.hbc .ok{color:#2f8a4a}.hbc .warn{color:#b8781c}.hbc .bad{color:#c2382f}
+.hbb{display:flex;gap:5px;flex-wrap:wrap}.hbb button{padding:5px 9px;font-size:12.5px;text-align:center;white-space:nowrap}
+.hbb .hbdone{background:var(--on);color:var(--onink);border-color:var(--on);margin-left:auto}
 #err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
 @media (max-width:760px){
   body{display:block}
@@ -104,6 +112,7 @@ body.closed .openbtn{display:flex}
   body:not(.closed) .sheet-bar svg{transform:rotate(180deg)}
   .views{grid-template-columns:1fr 1fr 1fr}
   .hint{bottom:auto;top:10px;max-width:calc(100% - 24px);font-size:11.5px;padding:4px 8px}
+  .hbchip{top:48px;padding:7px 8px;gap:5px}.hbchip .hbt .muted,.hbchip .hbw{display:none}.hbb{gap:4px;flex-wrap:nowrap}.hbb button{padding:5px 7px;font-size:12px}
   .pad{grid-template-columns:repeat(4,38px);grid-auto-rows:38px;gap:5px;right:10px;bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 }
 </style>
@@ -195,6 +204,8 @@ body.closed .openbtn{display:flex}
       <button data-deck="east" aria-pressed="true">East, by grills</button>
       <button data-deck="west">West, by gazebo</button>
     </div>
+    <div class="row"><label for="t-hbar">Moveable hosting bar</label><button class="sw" id="t-hbar" role="switch" aria-checked="false"></button></div>
+    <div class="subrow" id="hbHint" hidden>Yardistry YM11843, to scale. Tap it to select, drag to move.</div>
     <div class="row"><label>Gazebo seating</label></div>
     <div class="seg" role="group" aria-label="Gazebo seating">
       <button data-seat="ls" aria-pressed="true">Loveseat + swivels</button>
@@ -227,6 +238,11 @@ body.closed .openbtn{display:flex}
     <rect x="-2000" y="-2000" width="4100" height="4100" fill="#050505" mask="url(#eyes)"/></svg><div class="tag">neighbor cam</div></div>
   <div class="peep win" id="winpeep" aria-hidden="true"><div class="tag">upstairs window</div></div>
   <div class="toast" id="toast" role="status"></div>
+  <div class="hbchip" id="hbChip" hidden role="group" aria-label="Hosting bar">
+    <div class="hbt" title="Room behind = server side (prep step + shelves); in front = guest side (foot rail). Green = enough room, amber = tight."><b>Hosting bar</b> <span class="muted">6'-4" × 1'-11" · 42⅞" tall</span></div>
+    <div class="hbc" id="hbClr"></div>
+    <div class="hbb"><button data-hb="l" aria-label="Rotate left 15 degrees">↺ 15°</button><button data-hb="r" aria-label="Rotate right 15 degrees">↻ 15°</button><button data-hb="flip">Flip</button><button data-hb="reset">Reset</button><button data-hb="done" class="hbdone">Done</button></div>
+  </div>
   <div class="pad" id="pad" role="group" aria-label="Move the camera">
     <button data-act="rotL" aria-label="Turn left"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 6a7 7 0 1 1-1.5 6M5 2v4h4"/></svg></button>
     <button data-act="fwd" aria-label="Move forward"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5 10l5-5 5 5"/></svg></button>
@@ -1119,6 +1135,143 @@ Object.keys(EGGS).forEach(k=>{try{if(localStorage.getItem('patio-'+k)==='1')unlo
  document.querySelector('.views').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b||EGGS[b.dataset.view])return;
    const now=performance.now();if(b.dataset.view===last&&now-t0<900)n++;else{n=1;last=b.dataset.view;}t0=now;
    if(n>=3){const egg=b.dataset.view==='west'?'upstairs':b.dataset.view==='east'?'upstairsE':'neighbor';n=0;last=null;unlockEgg(egg,true);}});})();
+// ---- Yardistry Moveable Hosting Bar (YM11843), built from Yardistry's dimensional drawing ----
+// 76-1/16" long x 23-3/16" deep x 42-15/16" tall. Bar top 16-1/8" deep on the guest side; the 7" prep step behind it sits 1-9/16" lower.
+// Base (legs) 73-3/4" x 20-7/8"; 2-15/16" locking casters; 39-5/8" to the underside of the top; foot rail on the guest side;
+// open shelving on the server side. Local frame: x = length, +z = guest side, origin on the floor at the centre of the top.
+const hostBar=new T.Group(); hostBar.visible=false; scene.add(hostBar);
+const HB=(function(){const i=1/12, L=76.0625*i, D=23.1875*i, H=42.9375*i, BL=73.75*i, BD=20.875*i, STEP=16.125*i, DROP=1.5625*i,
+   CAST=2.9375*i, UNDER=39.625*i, LEG=3.5*i, TH=H-UNDER;
+ const zb0=-D/2+0.6*i, zb1=zb0+BD;            // base sits ~1.7" back from the guest edge of the top, ~0.6" in from the server edge
+ const tone=[0xb27a47,0xa66f3e,0xbb8452,0xad7543].map(c=>new T.MeshStandardMaterial({color:c,roughness:.78}));
+ const ced=tone[0], dark=new T.MeshStandardMaterial({color:0x1d1f21,roughness:.5,metalness:.5}), wheel=new T.MeshStandardMaterial({color:0x2b2b2b,roughness:.9});
+ const slat=(function(){const c=document.createElement('canvas');c.width=64;c.height=256;const g=c.getContext('2d');g.fillStyle='#8c5a33';g.fillRect(0,0,64,256);
+   for(let k=0;k<4;k++){const y=k*64;g.fillStyle=['#93603a','#87552f','#8f5d36','#835330'][k];g.fillRect(0,y+3,64,58);g.fillStyle='rgba(30,18,10,.85)';g.fillRect(0,y,64,3);
+     for(let n=0;n<40;n++){g.fillStyle=`rgba(${Math.random()<.5?'60,35,18':'170,120,80'},.18)`;g.fillRect(Math.random()*64,y+4+Math.random()*54,10+Math.random()*30,1);}}
+   const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.encoding=T.sRGBEncoding;
+   return new T.MeshStandardMaterial({map:t,roughness:.7,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});})();
+ const P={parent:hostBar}, mats=[...tone,slat], meshes=[];
+ const b=(x0,x1,y0,y1,z0,z1,m)=>{const o=box(x0,x1,y0,y1,z0,z1,m,P);meshes.push(o);return o;};
+ // top: guest-side bar top and the lower prep step behind it, each a cedar frame with a slatted field
+ const zs=D/2-STEP;
+ b(-L/2,L/2,H-TH,H,zs,D/2,ced); b(-L/2+1.25*i,L/2-1.25*i,H,H+.02*i,zs+.2*i,D/2-1.25*i,slat);
+ b(-L/2,L/2,H-TH,H-DROP,-D/2,zs,tone[1]); b(-L/2+1.25*i,L/2-1.25*i,H-DROP,H-DROP+.02*i,-D/2+1*i,zs,slat);
+ b(-L/2,L/2,H-DROP,H,zs-.75*i,zs,tone[2]);                     // riser board where the step drops
+ // legs (each corner is two boards; drawn as a 3-1/2" post) and casters
+ const lx=BL/2-LEG/2;
+ [[-1,zb0+LEG/2],[1,zb0+LEG/2],[-1,zb1-LEG/2],[1,zb1-LEG/2]].forEach(([sx,z],k)=>{const x=sx*lx;
+   b(x-LEG/2,x+LEG/2,CAST,H-TH,z-LEG/2,z+LEG/2,tone[k%4]);
+   const plate=new T.Mesh(new T.BoxGeometry(LEG*.9,.25*i,LEG*.9),dark);plate.position.set(x,CAST-.13*i,z);
+   const fork=new T.Mesh(new T.BoxGeometry(1.3*i,1.4*i,1.6*i),dark);fork.position.set(x,CAST-.95*i,z);
+   const w=new T.Mesh(new T.CylinderGeometry(1.15*i,1.15*i,.9*i,16),wheel);w.rotation.x=Math.PI/2;w.rotation.z=Math.PI/2;w.position.set(x,1.15*i,z+.25*i);
+   [plate,fork,w].forEach(m=>{m.castShadow=true;hostBar.add(m);meshes.push(m);});});
+ // guest-side face: bottom rail, apron with chamfered ends under the top, vertical boards between the legs
+ const fx0=-lx+LEG/2, fx1=lx-LEG/2, fz=zb1-.75*i;
+ b(fx0,fx1,CAST+.2*i,CAST+3.6*i,fz,zb1,tone[2]);
+ b(fx0,fx1,UNDER-2.2*i,UNDER,fz,zb1,tone[3]);
+ const nB=14, bw=(fx1-fx0)/nB;
+ for(let k=0;k<nB;k++)b(fx0+k*bw+.1*i,fx0+(k+1)*bw-.1*i,CAST+3.6*i,UNDER-2.2*i,fz+.05*i,zb1-.05*i,tone[(k*7)%4]);
+ // ends: vertical boards between the front and back legs
+ const ez0=zb0+LEG, ez1=zb1-LEG, nE=3, ew=(ez1-ez0)/nE;
+ [-1,1].forEach(sx=>{const x0=sx<0?-BL/2:BL/2-.75*i;b(x0,x0+.75*i,CAST+.2*i,CAST+3.6*i,ez0,ez1,tone[1]);
+   for(let k=0;k<nE;k++)b(x0+.05*i,x0+.7*i,CAST+3.6*i,UNDER-.5*i,ez0+k*ew+.1*i,ez0+(k+1)*ew-.1*i,tone[(k+2)%4]);});
+ // server side: open shelving in front of an inner back panel (shelf heights are adjustable; shown low and mid)
+ const sz=zb0+9.5625*i;
+ b(fx0,fx1,CAST+.2*i,UNDER-2.2*i,sz,sz+.75*i,tone[3]);
+ b(fx0,fx1,CAST+.2*i,CAST+3.6*i,zb0,zb0+.75*i,tone[2]);
+ [CAST+3.6*i,CAST+18.5*i].forEach((y,k)=>{for(let n=0;n<4;n++){const z0=zb0+.8*i+n*2.2*i;b(fx0,fx1,y,y+.75*i,z0,z0+2*i,tone[(n+k)%4]);}});
+ // foot rail: round rail on the guest side, on standoffs just above the casters (height is adjustable)
+ const fr=new T.Mesh(new T.CylinderGeometry(.75*i,.75*i,BL-LEG*.6,16),ced);fr.rotation.z=Math.PI/2;fr.position.set(0,6*i,zb1+1.6*i);fr.castShadow=true;hostBar.add(fr);meshes.push(fr);
+ [-1,1].forEach(sx=>{b(sx*lx-1*i,sx*lx+1*i,5*i,7*i,zb1,zb1+1.6*i,dark);});
+ meshes.forEach(m=>{m.userData.hb=true;});
+ // footprint + working zones (shown while selected): 30" behind for the server, 24" in front for guests
+ const foot=new T.Group(); foot.visible=false; hostBar.add(foot);
+ const fill=(w,d,z,op)=>{const m=new T.Mesh(new T.PlaneGeometry(w,d),new T.MeshBasicMaterial({color:0x3fae5a,transparent:true,opacity:op,depthWrite:false}));
+   m.rotation.x=-Math.PI/2;m.position.set(0,.03,z);m.renderOrder=2;foot.add(m);
+   const e=new T.LineSegments(new T.EdgesGeometry(m.geometry),new T.LineBasicMaterial({color:0x3fae5a,transparent:true,opacity:.95}));e.rotation.x=-Math.PI/2;e.position.set(0,.035,z);foot.add(e);
+   return {m,e};};
+ const SB=2.5, SF=2;
+ const core=fill(L,D,0,.42), back=fill(L,SB,-D/2-SB/2,.16), front=fill(L,SF,D/2+SF/2,.16);
+ return {L,D,H,SB,SF,mats,meshes,foot,core,back,front};})();
+const HB0={x:18.6,z:12,r:Math.PI/2};   // between the table and the gazebo: host faces the table and grills, guests face the lounge
+let hbSel=false, hbDrag=null, hbObs=null, hbBlockTouch=false;
+const hbChip=document.getElementById('hbChip'), hbClr=document.getElementById('hbClr');
+function hbSave(){try{localStorage.setItem('patio.hostbar',JSON.stringify({x:hostBar.position.x,z:hostBar.position.z,r:hostBar.rotation.y}));}catch(_){}}
+function hbPlace(x,z,r){if(r!=null)hostBar.rotation.y=r;const c=Math.abs(Math.cos(hostBar.rotation.y)),s=Math.abs(Math.sin(hostBar.rotation.y));
+  const ex=c*HB.L/2+s*HB.D/2, ez=s*HB.L/2+c*HB.D/2, zmin=toHouse?0:Z0;
+  hostBar.position.set(Math.max(ex,Math.min(PW-ex,x)),0,Math.max(zmin+ez,Math.min(Z1-ez,z)));hbCheck();}
+// things the bar or its working zones could bump into: anything solid standing on the patio between ankle and counter height,
+// plus the house and the patio's own edges (a zone hanging off the edge means a drop to the lawn)
+function hbObstacles(){const out=[], bx=new T.Box3(), vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
+  scene.updateMatrixWorld();
+  scene.traverse(o=>{if(!o.isMesh||o.isSprite||o.userData.hb||!vis(o))return;const m=o.material;if(m&&(m.transparent||Array.isArray(m)))return;
+    let p=o;for(;p;p=p.parent)if(p===hostBar)return;
+    bx.setFromObject(o);if(bx.isEmpty()||bx.max.y<.15||bx.min.y>3.6)return;
+    if((bx.max.x-bx.min.x)*(bx.max.z-bx.min.z)>400)return;
+    out.push([bx.min.x,bx.max.x,bx.min.z,bx.max.z]);});
+  const zmin=toHouse?0:Z0;
+  out.push([-99,0,-99,99],[PW,99,-99,99],[-99,99,Z1,99],[-99,99,-99,zmin]);
+  return out;}
+// does the bar-aligned rectangle (local x half-width hw, local z from z0 to z1) overlap any obstacle box? (separating axes)
+function hbHits(z0,z1,hw){const r=hostBar.rotation.y,ux=Math.cos(r),uz=-Math.sin(r),vx=Math.sin(r),vz=Math.cos(r),zc=(z0+z1)/2,hd=(z1-z0)/2;
+  const cx=hostBar.position.x+vx*zc, cz=hostBar.position.z+vz*zc, ex=Math.abs(ux)*hw+Math.abs(vx)*hd, ez=Math.abs(uz)*hw+Math.abs(vz)*hd;
+  return hbObs.some(([x0,x1,a0,a1])=>{if(cx+ex<=x0||cx-ex>=x1||cz+ez<=a0||cz-ez>=a1)return false;
+    const bx=(x0+x1)/2-cx,bz=(a0+a1)/2-cz,hx=(x1-x0)/2,hz=(a1-a0)/2;
+    if(Math.abs(bx*ux+bz*uz)>=hw+hx*Math.abs(ux)+hz*Math.abs(uz))return false;
+    if(Math.abs(bx*vx+bz*vz)>=hd+hx*Math.abs(vx)+hz*Math.abs(vz))return false;return true;});}
+function hbReach(dir){const D=HB.D/2,hw=HB.L/2;let lo=0,hi=6;if(!hbHits(...(dir>0?[D,D+hi]:[-D-hi,-D]),hw))return 6;
+  for(let k=0;k<11;k++){const m=(lo+hi)/2;if(hbHits(...(dir>0?[D,D+m]:[-D-m,-D]),hw))hi=m;else lo=m;}return lo;}
+function hbCheck(){if(!hbSel)return;if(!hbObs)hbObs=hbObstacles();
+  const hit=hbHits(-HB.D/2+.01,HB.D/2-.01,HB.L/2-.01), bk=hit?0:hbReach(-1), fr=hit?0:hbReach(1);
+  const col=(o,c)=>{o.m.material.color.setHex(c);o.e.material.color.setHex(c);};
+  col(HB.core,hit?0xd2433a:0x3fae5a); col(HB.back,hit||bk<HB.SB?0xe0a030:0x3fae5a); col(HB.front,hit||fr<HB.SF?0xe0a030:0x3fae5a);
+  const f=v=>v>=6?"6'+":ftin(v);
+  hbClr.innerHTML=hit?'<span class="bad">Overlaps something. Drag it to open patio.</span>':
+    `Room behind <b class="${bk<HB.SB?'warn':'ok'}">${f(bk)}</b> · in front <b class="${fr<HB.SF?'warn':'ok'}">${f(fr)}</b> <span class="muted hbw">(want 2'-6" / 2')</span>`;}
+function hbSelect(on){hbSel=on&&hostBar.visible;HB.foot.visible=hbSel;hbChip.hidden=!hbSel;
+  HB.mats.forEach(m=>m.emissive.setHex(hbSel?0x120a03:0));if(hbSel){hbObs=null;hbCheck();}}
+function setHostBar(on){hostBar.visible=on;document.getElementById('hbHint').hidden=!on;if(!on)hbSelect(false);
+  const el=document.getElementById('t-hbar');el.setAttribute('aria-checked',on);}
+sw('t-hbar',on=>{setHostBar(on);if(on){hbSelect(true);toast('Hosting bar added. Drag it to move; ↺ ↻ to turn.');}});
+(function(){try{const v=JSON.parse(localStorage.getItem('patio.hostbar')||'null');if(v&&isFinite(v.x)&&isFinite(v.z)){hostBar.position.set(v.x,0,v.z);hostBar.rotation.y=+v.r||0;return;}}catch(_){}
+  hostBar.position.set(HB0.x,0,HB0.z);hostBar.rotation.y=HB0.r;})();
+$$('[data-hb]').forEach(btn=>btn.addEventListener('click',()=>{const a=btn.dataset.hb,p=hostBar.position,st=Math.PI/12;
+  if(a==='done'){hbSelect(false);return;}
+  if(a==='reset'){hbPlace(HB0.x,HB0.z,HB0.r);hbSave();return;}
+  let r=hostBar.rotation.y+(a==='l'?st:a==='r'?-st:Math.PI);r=Math.atan2(Math.sin(r),Math.cos(r));r=Math.round(r/st)*st;
+  hbPlace(p.x,p.z,r);hbSave();}));
+addEventListener('keydown',e=>{if(!hbSel||(e.target.closest&&e.target.closest('input')))return;
+  if(e.key==='Escape')hbSelect(false);else if(e.key==='r'||e.key==='R'){const st=Math.PI/12;hbPlace(hostBar.position.x,hostBar.position.z,Math.round((hostBar.rotation.y+(e.shiftKey?st:-st))/st)*st);hbSave();}});
+// grab: a press that lands on the bar (nothing in front of it) selects it and drags it across the patio; the camera stays put
+(function(){const el=renderer.domElement, rc=new T.Raycaster(), pl=new T.Plane(new T.Vector3(0,1,0),0), v=new T.Vector3();
+ let tapDown=null;
+ const ray=e=>{const r=el.getBoundingClientRect();rc.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:-(e.clientY-r.top)/r.height*2+1},camera);};
+ const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
+ const onBar=e=>{ray(e);const h=rc.intersectObjects(scene.children,true).find(h=>h.object.isMesh&&!h.object.isSprite&&vis(h.object)&&!(h.object.material&&h.object.material.transparent));
+   return !!(h&&h.object.userData.hb);};
+ addEventListener('pointerdown',e=>{if(e.target!==el)return;tapDown=null;
+   if(!hostBar.visible||tapeOn||eggOn||!e.isPrimary||e.button>0){if(hbSel&&e.isPrimary)tapDown={x:e.clientX,y:e.clientY};return;}
+   if(!onBar(e)){if(hbSel)tapDown={x:e.clientX,y:e.clientY};return;}
+   e.stopPropagation();e.preventDefault();anim=null;glide=null;
+   if(!rc.ray.intersectPlane(pl,v))return;
+   if(!hbSel)hbSelect(true);hbObs=hbObstacles();
+   hbDrag={id:e.pointerId,dx:hostBar.position.x-v.x,dz:hostBar.position.z-v.z,sx:e.clientX,sy:e.clientY,moved:false};hbBlockTouch=true;
+   el.style.cursor='grabbing';},true);
+ addEventListener('pointermove',e=>{if(!hbDrag){if(hostBar.visible&&e.target===el&&e.pointerType==='mouse'&&!e.buttons&&mode==='orbit'){
+       const t=performance.now();if(t-(onBar.t||0)>80){onBar.t=t;el.style.cursor=onBar(e)?'grab':'';}}return;}
+   if(e.pointerId!==hbDrag.id)return;e.stopPropagation();
+   if(Math.hypot(e.clientX-hbDrag.sx,e.clientY-hbDrag.sy)>3)hbDrag.moved=true;
+   ray(e);if(rc.ray.intersectPlane(pl,v))hbPlace(v.x+hbDrag.dx,v.z+hbDrag.dz);},true);
+ const end=e=>{if(hbDrag&&e.pointerId===hbDrag.id){e.stopPropagation();if(hbDrag.moved)hbSave();hbDrag=null;el.style.cursor='grab';return;}
+   if(tapDown&&e.target===el&&Math.hypot(e.clientX-tapDown.x,e.clientY-tapDown.y)<8)hbSelect(false);tapDown=null;};
+ addEventListener('pointerup',end,true);addEventListener('pointercancel',end,true);
+ ['touchstart','touchmove','touchend','touchcancel'].forEach(t=>addEventListener(t,e=>{if(!hbBlockTouch||e.target!==el)return;e.stopPropagation();
+   if(t==='touchend'||t==='touchcancel'){if(!e.touches.length)hbBlockTouch=false;}},{capture:true,passive:false}));
+ addEventListener('mousedown',e=>{if(hbDrag&&e.target===el)e.stopPropagation();},true);})();
+// anything else that changes what's on the patio invalidates the obstacle list
+document.getElementById('panel').addEventListener('click',()=>{hbObs=null;if(hbSel)setTimeout(hbCheck,0);});
+window.__hbScr=()=>{const v=hostBar.position.clone();v.y=3.2;v.project(camera);const r=renderer.domElement.getBoundingClientRect();return [r.left+(v.x+1)/2*r.width,r.top+(1-v.y)/2*r.height,hostBar.position.x,hostBar.position.z,hostBar.rotation.y];};
+window.__hb=(on,x,z,r)=>{setHostBar(!!on);if(x!=null)hbPlace(x,z,r);hbSelect(!!on);return hbClr.textContent;};
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;document.querySelector('#peep svg').setAttribute('viewBox',w<h?'13 30 74 40':'0 0 100 100');renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 new ResizeObserver(resize).observe(stage); resize();
 go('aerial',true); applySun();
