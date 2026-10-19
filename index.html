@@ -194,6 +194,12 @@ body.closed .openbtn{display:flex}
       <button data-edge="pavers" aria-pressed="true">Pavers to the house</button>
       <button data-edge="rock">2' river rock</button>
     </div>
+    <div class="row"><label>Stair risers</label></div>
+    <div class="seg" role="group" aria-label="Stair risers">
+      <button data-riser="pisa" aria-pressed="true">Pisa (rugged)</button>
+      <button data-riser="xlgr">XL Smooth Granite</button>
+      <button data-riser="xlcc">XL Smooth Charcoal</button>
+    </div>
     <div class="row"><label for="t-accent">Charcoal accent course</label><button class="sw" id="t-accent" role="switch" aria-checked="true"></button></div>
     <div class="row"><label for="t-rug">Gazebo border</label><button class="sw" id="t-rug" role="switch" aria-checked="true"></button></div>
     <div class="row"><label for="t-furn">Furniture</label><button class="sw" id="t-furn" role="switch" aria-checked="true"></button></div>
@@ -374,6 +380,9 @@ M.xlGranite=mat(blockTex('pxlgr',15.75,5.875,4,8,{sppi:9}));
 M.xlCharcoal=mat(blockTex('pxlcc',15.75,5.875,4,8,{sppi:9}));
 M.edge=mat(blockTex('pe_gr',17.75,3.625,4,10,{sppi:9}));
 M.riser=mat(blockTex('pgr',15.75,5.875,4,6,{sppi:9}),.95);
+// stair riser options: regular Pisa Granite (rugged face), Pisa XL Smooth Granite (matches the retaining wall), Pisa XL Smooth Midnight Charcoal
+const RISER={pisa:M.riser.map, xlgr:blockTex('pxlgr',15.75,5.875,4,6,{sppi:9}), xlcc:blockTex('pxlcc',15.75,5.875,4,6,{sppi:9})};
+function setRiser(k){M.riser.map=RISER[k]||RISER.pisa;M.riser.roughness=k==='pisa'?.95:.9;M.riser.needsUpdate=true;}
 M.copX=mat(blockTex('endc',23.625,14,4,1,{stack:true,sppi:5,joint:'rgba(20,20,20,.9)'}),.85);
 M.copZ=mat(blockTex('endc',23.625,14,4,1,{stack:true,sppi:5,joint:'rgba(20,20,20,.9)',rotate:true}),.85);
 // Unilock Holland Premier, Dark Charcoal: 3-7/8" x 7-7/8", one soldier course (long side across the border), joints lined up
@@ -938,6 +947,8 @@ $$('[data-deck]').forEach(b=>b.addEventListener('click',()=>{setDeck(b.dataset.d
 window.__cook=m=>setCook(m); window.__deck=m=>setDeck(m); window.__umb=m=>setUmb(m);
 $$('[data-umb]').forEach(b=>b.addEventListener('click',()=>{setUmb(b.dataset.umb);press('[data-umb]',b);}));
 sw('t-fire',on=>{flames.forEach(f=>f.visible=on);fireLight.visible=on;});
+$$('[data-riser]').forEach(b=>b.addEventListener('click',()=>{setRiser(b.dataset.riser);press('[data-riser]',b);}));
+window.__riser=k=>{setRiser(k);press('[data-riser]',document.querySelector(`[data-riser="${k}"]`));};
 const accSwitch=sw('t-accent',on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;});
 window.__accent=on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;accSwitch.setAttribute('aria-checked',on);};
 let toHouse=false;
@@ -1477,7 +1488,7 @@ let last=performance.now();
 // ---- share a view: everything on screen (camera, switches, time, moved furniture) rides in the link as #s=...
 const PAGES_URL='https://prateradam123.github.io/patio-design/', ON_PAGES=/github\.io$/.test(location.hostname);
 const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person'];
-const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims'];
+const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser'];
 const r2=v=>Math.round(v*100)/100;
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const dec=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
