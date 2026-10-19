@@ -48,6 +48,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .readout b{color:var(--ink);font-weight:500}
 .seg[aria-disabled="true"]{opacity:.4;pointer-events:none}
 .subrow{font-size:12px;color:var(--muted);margin:-6px 0 0}
+.muted{color:var(--muted);font-weight:400}
+.p2sub{display:grid;gap:8px;margin:-2px 0 2px 2px;padding-left:12px;border-left:2px solid var(--rule)}
+.p2sub .row label{font-size:13.5px}
+.row[aria-disabled="true"]{opacity:.45;pointer-events:none}
 .note{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:12px;margin-top:auto}
 #stage{position:relative;flex:1;min-width:0;min-height:0}
 #stage canvas{display:block;width:100%;height:100%}
@@ -156,15 +160,19 @@ body.closed .openbtn{display:flex}
 
   <section aria-labelledby="h-show">
     <h2 id="h-show">Show</h2>
-    <div class="row"><label for="t-p2">Phase 2 (spring)</label><button class="sw" id="t-p2" role="switch" aria-checked="true"></button></div>
-    <p class="subrow">Arborvitae bed, privacy wall + TV, river-rock plants + lights</p>
-    <div class="seg" role="group" aria-label="Arborvitae size" id="ageSeg">
-      <button data-age="young" aria-pressed="true">Trees just planted</button>
-      <button data-age="old">~10 years</button>
-    </div>
-    <div class="seg" role="group" aria-label="Arborvitae bed cover" id="coverSeg">
-      <button data-cover="mulch" aria-pressed="true">Black mulch</button>
-      <button data-cover="rock">River rock</button>
+    <div class="row"><label for="t-p2">Phase 2 (spring) <span class="muted">· all</span></label><button class="sw" id="t-p2" role="switch" aria-checked="true"></button></div>
+    <div class="p2sub">
+      <div class="row"><label for="t-p2bed">Arborvitae bed</label><button class="sw" id="t-p2bed" role="switch" aria-checked="true"></button></div>
+      <div class="seg" role="group" aria-label="Arborvitae size" id="ageSeg">
+        <button data-age="young" aria-pressed="true">Just planted</button>
+        <button data-age="old">~10 years</button>
+      </div>
+      <div class="seg" role="group" aria-label="Arborvitae bed cover" id="coverSeg">
+        <button data-cover="mulch" aria-pressed="true">Black mulch</button>
+        <button data-cover="rock">River rock</button>
+      </div>
+      <div class="row"><label for="t-p2pw">Privacy wall + TV</label><button class="sw" id="t-p2pw" role="switch" aria-checked="true"></button></div>
+      <div class="row" id="rowP2rock"><label for="t-p2rock">River-rock plants + lights</label><button class="sw" id="t-p2rock" role="switch" aria-checked="true"></button></div>
     </div>
     <div class="row"><label>Along the house</label></div>
     <div class="seg" role="group" aria-label="Along the house">
@@ -392,7 +400,8 @@ box(HX0,BAY0,-1.2,ROCKTOP,0,Z0,M.rock,{cast:false,parent:rockStrip});
 box(BAY1,HX1,-1.2,ROCKTOP,0,Z0,M.rock,{cast:false,parent:rockStrip});
 box(HX0,0,-1.2,ROCKTOP,0,Z0,M.rock,{cast:false,parent:rockEnds});      // with pavers to the house, rock stays only past the patio ends
 box(PW,HX1,-1.2,ROCKTOP,0,Z0,M.rock,{cast:false,parent:rockEnds});
-(function(){const top=new T.MeshStandardMaterial({color:0x6c6d6c,roughness:.95}), E=[M.xlGranite,M.xlGranite,top,M.xlGranite,M.xlGranite,M.xlGranite], d=.5, o={vo:ROCKTOP};
+const rockEdges=new T.Group(); scene.add(rockEdges);    // only with the 2' rock strip; pavers-to-house leaves lawn past the patio ends
+(function(){const top=new T.MeshStandardMaterial({color:0x6c6d6c,roughness:.95}), E=[M.xlGranite,M.xlGranite,top,M.xlGranite,M.xlGranite,M.xlGranite], d=.5, o={vo:ROCKTOP,parent:rockEdges};
  const e=.01;                                   // sit a hair proud of the rock faces they retain
  box(HX0-e,0,-1.2,ROCKTOP+e,Z0-d,Z0+e,E,o);            // east of the patio, yard side
  box(HX0-e,HX0+d,-1.2,ROCKTOP+e,-.2,Z0-d,E,o);         // east end
@@ -800,22 +809,30 @@ sw('t-fire',on=>{flames.forEach(f=>f.visible=on);fireLight.visible=on;});
 const accSwitch=sw('t-accent',on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;});
 window.__accent=on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;accSwitch.setAttribute('aria-checked',on);};
 let toHouse=false;
-function setHouseEdge(m){toHouse=m==='pavers';if(typeof dimsMode!=='undefined'&&dimsMode==='grid')buildGrid(toHouse?0:Z0);pavHouse.visible=toHouse;houseBorder.visible=!toHouse;rockStrip.visible=!toHouse;rockEnds.visible=toHouse;rockVis();}
+function setHouseEdge(m){toHouse=m==='pavers';if(typeof dimsMode!=='undefined'&&dimsMode==='grid')buildGrid(toHouse?0:Z0);pavHouse.visible=toHouse;houseBorder.visible=!toHouse;rockStrip.visible=!toHouse;rockEnds.visible=false;rockEdges.visible=!toHouse;rockVis();if(typeof applyP2==='function'&&typeof P2!=='undefined')applyP2();}
 $$('[data-edge]').forEach(b=>b.addEventListener('click',()=>{setHouseEdge(b.dataset.edge);press('[data-edge]',b);}));
 window.__edge=m=>{setHouseEdge(m);press('[data-edge]',document.querySelector(`[data-edge="${m}"]`));};
 // phase 2 = arborvitae bed + trees, privacy wall + TV, river-rock plants + path lights, all on one switch
-let p2On=true, treeAge='young';
-function applyP2(){pwGroup.visible=p2On;setBed(p2On?treeAge:'off');rockPlants.visible=p2On;rockNight.visible=p2On;
-  ['ageSeg','coverSeg'].forEach(id=>document.getElementById(id).setAttribute('aria-disabled',!p2On));}
-const p2Switch=sw('t-p2',on=>{p2On=on;applyP2();});
+// phase 2 pieces switch on/off individually; the master switch turns them all on or all off
+const P2={bed:true,pw:true,rock:true}; let p2On=true, treeAge='young';
+const p2El={all:document.getElementById('t-p2'),bed:document.getElementById('t-p2bed'),pw:document.getElementById('t-p2pw'),rock:document.getElementById('t-p2rock')};
+function applyP2(){p2On=P2.bed||P2.pw||P2.rock;
+  pwGroup.visible=P2.pw;setBed(P2.bed?treeAge:'off');rockPlants.visible=P2.rock;rockNight.visible=P2.rock;
+  ['ageSeg','coverSeg'].forEach(id=>document.getElementById(id).setAttribute('aria-disabled',!P2.bed));
+  Object.keys(P2).forEach(k=>p2El[k].setAttribute('aria-checked',P2[k]));p2El.all.setAttribute('aria-checked',p2On);
+  // rock plants only exist with the 2' rock strip
+  document.getElementById('rowP2rock').setAttribute('aria-disabled',typeof toHouse!=='undefined'&&toHouse);}
+p2El.all.addEventListener('click',()=>{const on=!p2On;Object.keys(P2).forEach(k=>P2[k]=on);applyP2();});
+Object.keys(P2).forEach(k=>p2El[k].addEventListener('click',()=>{P2[k]=!P2[k];applyP2();}));
+const p2Switch=p2El.all;
 $$('[data-age]').forEach(b=>b.addEventListener('click',()=>{treeAge=b.dataset.age;press('[data-age]',b);applyP2();}));
 $$('[data-cover]').forEach(b=>b.addEventListener('click',()=>{setBedTop(b.dataset.cover);press('[data-cover]',b);}));
 window.__cover=m=>{setBedTop(m);press('[data-cover]',document.querySelector(`[data-cover="${m}"]`));};
-window.__p2=on=>{p2On=on;p2Switch.setAttribute('aria-checked',on);applyP2();};
-window.__bed=m=>{if(m==='off'){window.__p2(false);return;}treeAge=m;press('[data-age]',document.querySelector(`[data-age="${m}"]`));window.__p2(true);};
+window.__p2=on=>{Object.keys(P2).forEach(k=>P2[k]=on);applyP2();};
+window.__bed=m=>{if(m==='off'){P2.bed=false;applyP2();return;}treeAge=m;press('[data-age]',document.querySelector(`[data-age="${m}"]`));P2.bed=true;applyP2();};
 const rugSwitch=sw('t-rug',on=>{gzRug.visible=on;});
 window.__rug=on=>{gzRug.visible=on;rugSwitch.setAttribute('aria-checked',on);};
-window.__pw=on=>{pwGroup.visible=on;};
+window.__pw=on=>{P2.pw=on;applyP2();};
 
 // ---- landscape lighting: 3000K hardscape + 2700K step lights from the electrical sheet
 const nightGroup=new T.Group(); nightGroup.visible=false; scene.add(nightGroup);
@@ -984,7 +1001,7 @@ function dim(a,b,text,sub,when){const line=dimLine(a,b,dimMat,dimGroup);const el
  dim([BAY1+.4,yl,Z0],[BAY1+.4,yl,Z0+2.5+22/12],ftin(2.5+22/12),'door steps');
  dim([TCX-TW/2,29/12+.15,TCZ+TL/2+.35],[TCX+TW/2,29/12+.15,TCZ+TL/2+.35],ftin(TW),'× '+ftin(TL)+' table');
  // phase 2
- dim([HX0,.6,11],[0,.6,11],ftin(-HX0),'arb bed',()=>p2On);
+ dim([HX0,.6,11],[0,.6,11],ftin(-HX0),'arb bed',()=>P2.bed);
 })();
 // 1' grid over the patio, heavier every 5'
 const gridGroup=new T.Group(); gridGroup.visible=false; scene.add(gridGroup);
