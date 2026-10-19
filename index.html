@@ -497,13 +497,20 @@ retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBo
 
 // yard stair: 5 risers of ~7-5/8" from the patio to the lawn, 12" treads, Pisa Granite risers + Endura treads
 const NR=5, RISE=-grade(Z1+4)/NR;
-(function(){box(ST0,ST1,-4,-COP,Z1-WALL,Z1,M.riser,{vo:-COP}); box(ST0-.03,ST1+.03,-COP,0,Z1-WALL,Z1+.06,M.copX,{uo:ST0});
+// treads: one piece deep (no seam across the step), joints centred on the stair so each tread is a full 24" unit in the
+// middle with an equal cut at each end, lined up step to step; riser joints centred the same way
+(function(){const SC=(ST0+ST1)/2, tu=SC-23.625/24, ru=SC-15.75/24;
+ const tread=(top,z0,z1)=>box(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:tu,vo:z0-.04});
+ box(ST0,ST1,-4,-COP,Z1-WALL,Z1,M.riser,{uo:ru,vo:-COP}); tread(0,Z1-WALL,Z1);
  for(let i=1;i<NR;i++){const top=-RISE*i, z0=Z1+(i-1), z1=Z1+i;
-   box(ST0,ST1,-5,top-COP,z0,z1,M.riser,{vo:top-COP}); box(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:ST0});}})();
+   box(ST0,ST1,-5,top-COP,z0,z1,M.riser,{uo:ru,vo:top-COP}); tread(top,z0,z1);}})();
 
 // door steps across the full 10' bay: 30" landing, then two 11" treads (4 risers of 7-3/4")
 (function(){const r=SILL/4, lv=[[Z0,Z0+2.5,SILL-r],[Z0+2.5,Z0+2.5+11/12,SILL-2*r],[Z0+2.5+11/12,Z0+2.5+22/12,SILL-3*r]];
- lv.forEach(([z0,z1,top])=>{box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{vo:top-COP});box(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:BAY0});});})();
+ // 10' wide: a joint on the centre line leaves even 12-3/4" cuts at each end (a centred unit would leave 1" slivers);
+ // the 11" treads are one piece deep, the 30" landing is laid in rows from its front edge
+ lv.forEach(([z0,z1,top])=>{box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{uo:BAYC-15.75/24,vo:top-COP});
+   box(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:BAYC,vo:(z1-z0)>1.2?z1+.06:z0-.04});});})();
 
 // Yardistry Meridian 12x12 (YM11769): posts 12" off the west and front seat walls.
 // Yardistry lists the base at 11'-6" outside / 9'-10 1/2" inside, i.e. 10" post bases on 10'-8 1/2" centres
