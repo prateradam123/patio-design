@@ -61,8 +61,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .dim{position:absolute;left:0;top:0;transform:translate(-50%,-50%);white-space:nowrap;font:500 11.5px/1.2 var(--f-mono);color:#fff;
   background:rgba(176,72,22,.92);padding:2px 6px;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.3);font-variant-numeric:tabular-nums}
 .dim small{font:inherit;opacity:.8;margin-left:4px}
-.dim.nup::after,.dim.ndn::after{content:"";position:absolute;left:50%;width:1px;height:var(--lh);background:rgba(176,72,22,.85);z-index:-1}
-.dim.nup::after{top:50%}.dim.ndn::after{bottom:50%}
 .dim.mt{background:rgba(22,96,176,.94)}
 .pad{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:12px;display:grid;grid-template-columns:repeat(4,40px);grid-auto-rows:40px;gap:6px;
   user-select:none;-webkit-user-select:none;touch-action:none}
@@ -98,15 +96,11 @@ body.closed .openbtn{display:flex}
 .hbc b{font-weight:500}.hbc .ok{color:#2f8a4a}.hbc .warn{color:#b8781c}.hbc .bad{color:#c2382f}
 .hbb{display:flex;gap:5px;flex-wrap:wrap}.hbb button{padding:5px 9px;font-size:12.5px;text-align:center;white-space:nowrap}
 .hbb .hbdone{background:var(--on);color:var(--onink);border-color:var(--on);margin-left:auto}
-/* scenes, share/photo */
-.scenes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.scenes button{text-align:center}
+/* share / photo */
 .stagebtns{position:absolute;top:12px;right:max(12px,env(safe-area-inset-right,0px));display:flex;gap:6px;z-index:5}
 .stagebtns button{display:flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--panel) 92%,transparent);box-shadow:0 1px 3px rgba(0,0,0,.18);padding:7px 10px;border-radius:8px;font-size:12.5px}
 .stagebtns svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.hbb [hidden]{display:none}
-/* the camera pad is for walking; touch screens orbit with drag and pinch, so it only shows at eye level there */
-@media (pointer:coarse){body[data-mode="orbit"] .pad{display:none}}
+.hbb [hidden],.hbc[hidden]{display:none}
 #err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
 @media (max-width:760px){
   body{display:block}
@@ -123,14 +117,8 @@ body.closed .openbtn{display:flex}
   body:not(.closed) .sheet-bar svg{transform:rotate(180deg)}
   .views{grid-template-columns:1fr 1fr 1fr}
   .hint{bottom:auto;top:10px;max-width:calc(100% - 24px);font-size:11.5px;padding:4px 8px}
-  .hbchip{top:auto;bottom:calc(60px + env(safe-area-inset-bottom,0px));padding:6px 8px;gap:4px;width:calc(100% - 20px)}
-  .hbchip .hbt{font-size:12px}.hbchip .hbw{display:none}.hbc{font-size:11.5px}
-  .hbb{gap:4px;flex-wrap:nowrap}.hbb button{padding:5px 6px;font-size:12px;flex:1 1 auto}.hbb .hbdone{flex:0 0 auto}
-  .stagebtns{top:46px;right:10px}
-  body[data-mode="eye"] .hbchip{bottom:calc(152px + env(safe-area-inset-bottom,0px))}
-  .stagebtns span{display:none}.stagebtns button{padding:9px}
-  body.half .panel{transform:translateY(calc(100% - 44dvh))}
-  body.half .sheet-bar svg{transform:none}
+  .hbchip{top:96px;padding:7px 8px;gap:5px}.hbchip .hbw{display:none}.hbchip .hbt{font-size:12px}
+  .stagebtns{top:46px;right:10px}.stagebtns span{display:none}.stagebtns button{padding:9px}.hbb{gap:4px;flex-wrap:nowrap}.hbb button{padding:5px 7px;font-size:12px}
   .pad{grid-template-columns:repeat(4,38px);grid-auto-rows:38px;gap:5px;right:10px;bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 }
 </style>
@@ -142,16 +130,6 @@ body.closed .openbtn{display:flex}
     <h1 id="ttl">Rear Patio</h1>
     <div class="sub" id="subttl">All Granite · Powell, OH</div>
   </div>
-
-  <section aria-labelledby="h-scenes">
-    <h2 id="h-scenes">Scenes</h2>
-    <div class="scenes">
-      <button data-scene="everyday">Everyday</button>
-      <button data-scene="party">Hosting a party</button>
-      <button data-scene="phase2">Phase 2 done</button>
-      <button data-scene="fall">Fall evening</button>
-    </div>
-  </section>
 
   <section aria-labelledby="h-view">
     <h2 id="h-view">View</h2>
@@ -218,7 +196,6 @@ body.closed .openbtn{display:flex}
     </div>
     <div class="row"><label for="t-accent">Charcoal accent course</label><button class="sw" id="t-accent" role="switch" aria-checked="true"></button></div>
     <div class="row"><label for="t-rug">Gazebo border</label><button class="sw" id="t-rug" role="switch" aria-checked="true"></button></div>
-    <div class="row"><label for="t-yard">Backyard trees + fence</label><button class="sw" id="t-yard" role="switch" aria-checked="true"></button></div>
     <div class="row"><label for="t-furn">Furniture</label><button class="sw" id="t-furn" role="switch" aria-checked="true"></button></div>
     <div class="row"><label>Cooking</label></div>
     <div class="seg" role="group" aria-label="Cooking">
@@ -274,7 +251,7 @@ body.closed .openbtn{display:flex}
   <div class="hbchip" id="hbChip" hidden role="group" aria-label="Hosting bar">
     <div class="hbt"><b id="selT">Hosting bar</b> <span class="muted" id="selI"></span></div>
     <div class="hbc" id="hbClr"></div>
-    <div class="hbb"><button data-hb="l" aria-label="Rotate left 15 degrees">↺ 15°</button><button data-hb="r" aria-label="Rotate right 15 degrees">↻ 15°</button><button data-hb="t90">Turn 90°</button><button data-hb="flip">Flip</button><button data-hb="reset">Reset</button><button data-hb="done" class="hbdone">Done</button></div>
+    <div class="hbb"><button data-hb="l" aria-label="Rotate left 15 degrees">↺ 15°</button><button data-hb="r" aria-label="Rotate right 15 degrees">↻ 15°</button><button data-hb="flip">Flip</button><button data-hb="reset">Reset</button><button data-hb="done" class="hbdone">Done</button></div>
   </div>
   <div class="pad" id="pad" role="group" aria-label="Move the camera">
     <button data-act="rotL" aria-label="Turn left"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 6a7 7 0 1 1-1.5 6M5 2v4h4"/></svg></button>
@@ -298,15 +275,14 @@ const stage=document.getElementById('stage');
 if(!window.THREE){stage.insertAdjacentHTML('beforeend','<div id="err">The 3D viewer couldn&rsquo;t load. Try reloading the page.</div>');return;}
 const T=THREE;
 const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
-const COARSE=matchMedia('(pointer:coarse)').matches;          // phones/tablets: lighter render settings
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,COARSE?1.5:2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.outputEncoding=T.sRGBEncoding;
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFSoftShadowMap;
-renderer.toneMapping=T.ACESFilmicToneMapping; renderer.toneMappingExposure=1.12;
+renderer.toneMapping=T.NoToneMapping;
 stage.prepend(renderer.domElement);
 const scene=new T.Scene(); window.__scene=scene;
 scene.background=new T.Color(0xcfdbe6);
-scene.fog=new T.Fog(0xcfdbe6,110,330);
+scene.fog=new T.Fog(0xcfdbe6,120,260);
 const camera=new T.PerspectiveCamera(50,1,0.3,600);   // near plane at 0.3' keeps depth precision for the coplanar pavers
 const controls=new T.OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true; controls.maxPolarAngle=Math.PI*0.495;
@@ -315,22 +291,10 @@ controls.enableDamping=true; controls.maxPolarAngle=Math.PI*0.495;
 const hemi=new T.HemisphereLight(0xeef2f6,0x55603f,0.5); scene.add(hemi);
 const sun=new T.DirectionalLight(0xfff3e0,0.85);
 sun.position.set(-30,55,45); sun.castShadow=true;
-sun.shadow.mapSize.set(COARSE?2048:4096,COARSE?2048:4096);
+sun.shadow.mapSize.set(4096,4096);
 Object.assign(sun.shadow.camera,{left:-55,right:55,top:55,bottom:-55,near:1,far:320});
 sun.shadow.bias=-0.0004; sun.shadow.normalBias=0.03; sun.target.position.set(17,0,10);
 scene.add(sun,sun.target);
-const skyU={top:{value:new T.Color(0x6f9ccc)},hor:{value:new T.Color(0xcfdbe6)},bot:{value:new T.Color(0xcfdbe6)}};
-const skyDome=new T.Mesh(new T.SphereGeometry(500,32,16),new T.ShaderMaterial({uniforms:skyU,side:T.BackSide,depthWrite:false,fog:false,
-  vertexShader:'varying vec3 vp;void main(){vp=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:'uniform vec3 top,hor,bot;varying vec3 vp;void main(){float h=vp.y;vec3 c=h>0.?mix(hor,top,pow(smoothstep(0.,1.,h),.55)):bot;gl_FragColor=vec4(c,1.);}'}));
-skyDome.renderOrder=-10; skyDome.frustumCulled=false; scene.add(skyDome);
-// reflections for metal and glass: a small sky/ground cube map (plain canvases, so it works on every phone GPU)
-const envCube=(function(){const face=(kind)=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');
-   if(kind==='up'){g.fillStyle='#7fa6d4';g.fillRect(0,0,64,64);} else if(kind==='down'){g.fillStyle='#3a4630';g.fillRect(0,0,64,64);}
-   else{const gr=g.createLinearGradient(0,0,0,64);gr.addColorStop(0,'#86abd6');gr.addColorStop(.47,'#dfe7ee');gr.addColorStop(.5,'#6f7d5a');gr.addColorStop(1,'#3a4630');g.fillStyle=gr;g.fillRect(0,0,64,64);
-     g.fillStyle='rgba(60,80,50,.8)';for(let x=0;x<64;x+=3)g.fillRect(x,26+Math.random()*5,3,7);}
-   return c;};
- const t=new T.CubeTexture([face('side'),face('side'),face('up'),face('down'),face('side'),face('side')]);t.encoding=T.sRGBEncoding;t.needsUpdate=true;return t;})();
 
 // textures (sizes in feet that each photo covers)
 const loader=new T.TextureLoader();
@@ -357,19 +321,10 @@ const M={
   steel:new T.MeshStandardMaterial({color:0x1d1f21,roughness:.4,metalness:.6}),
 };
 // grass texture from noise
-(function(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#4f6838';g.fillRect(0,0,256,256);
+(function(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#55703a';g.fillRect(0,0,256,256);
  for(let i=0;i<9000;i++){const v=Math.random();g.fillStyle=v<.5?'rgba(60,82,44,.35)':'rgba(140,160,96,.25)';g.fillRect(Math.random()*256,Math.random()*256,1.5,2.5);}
- const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(95,88);t.encoding=T.sRGBEncoding;M.grass=new T.MeshStandardMaterial({map:t,roughness:1});})();
+ const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(30,30);t.encoding=T.sRGBEncoding;M.grass=new T.MeshStandardMaterial({map:t,roughness:1});})();
 
-// soft contact shadows: a blurred dark rectangle or disc laid on the floor under each piece
-const BLOBT={};
-function blobTex(round){const k=round?'r':'s';if(BLOBT[k])return BLOBT[k];const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
-  g.shadowColor='#000';g.shadowBlur=26;g.shadowOffsetX=1000;g.fillStyle='#000';   // blur via the shadow of a shape drawn off-canvas (works on Safari too)
-  if(round){g.beginPath();g.arc(64-1000,64,38,0,7);g.fill();}else g.fillRect(28-1000,28,72,72);
-  const t=new T.CanvasTexture(c);return BLOBT[k]=t;}
-function blob(parent,cx,cz,w,d,op=.42,round=false,y=.012){const m=new T.Mesh(new T.PlaneGeometry(w*1.6,d*1.6),
-  new T.MeshBasicMaterial({map:blobTex(round),color:0x000000,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
-  m.rotation.x=-Math.PI/2;m.position.set(cx,y,cz);m.renderOrder=1;m.userData.blob=true;parent.add(m);return m;}
 // wrap a group built in world coordinates in a pivot at (cx,cz), so it can be moved and turned about its own centre
 function pivot(g,cx,cz){g.parent.updateMatrixWorld(true);const P=new T.Group();P.position.set(cx,0,cz);g.parent.add(P);P.updateMatrixWorld(true);P.attach(g);return P;}
 // box in world coordinates (x0..x1, y0..y1, z0..z1) with world-scaled UVs
@@ -441,92 +396,28 @@ const grade=z=>-0.483-0.1167*Math.max(z,0);     // plot-plan grades 946.1 at the
 const ground=z=>grade(z);
 
 // ground
-(function(){const g=new T.PlaneGeometry(760,700,1,260);g.rotateX(-Math.PI/2);g.translate(17.5,0,30);
+(function(){const g=new T.PlaneGeometry(260,220,1,220);g.rotateX(-Math.PI/2);g.translate(17.5,0,60);
  const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setY(i,ground(p.getZ(i))-0.03);g.computeVertexNormals();
  const m=new T.Mesh(g,M.grass);m.receiveShadow=true;scene.add(m);})();
-// backyard surroundings (rough context, not surveyed): a 4' black picket fence on the approximate lot lines and a tree line behind
-const yard=new T.Group(); scene.add(yard); const LOT={e:-11.2,w:42,r:48};
-const yardFenceE=new T.Group(); yard.add(yardFenceE);
-(function(){const blk=new T.MeshStandardMaterial({color:0x1c1d1f,roughness:.45,metalness:.6});
- const runs=[[LOT.e,-1,LOT.e,LOT.r,yardFenceE],[LOT.e,LOT.r,LOT.w,LOT.r,yard],[LOT.w,LOT.r,LOT.w,-1,yard]];
- let n=0;runs.forEach(([a,b,c,d])=>n+=Math.ceil(Math.hypot(c-a,d-b)/.375)+1);
- const pk=new T.InstancedMesh(new T.BoxGeometry(.07,4,.07),blk,n*2), mt=new T.Matrix4();let k=0;
- runs.forEach(([x0,z0,x1,z1,par])=>{const L=Math.hypot(x1-x0,z1-z0),dx=(x1-x0)/L,dz=(z1-z0)/L;
-   const im=par===yard?pk:null;
-   const pks=par===yard?pk:(par.userData.pk=par.userData.pk||new T.InstancedMesh(new T.BoxGeometry(.07,4,.07),blk,Math.ceil(L/.375)+2));
-   let kk=0;
-   for(let t=0;t<=L;t+=.375){const x=x0+dx*t,z=z0+dz*t;mt.makeTranslation(x,ground(z)+2,z);if(par===yard)pk.setMatrixAt(k++,mt);else pks.setMatrixAt(kk++,mt);}
-   if(par!==yard){pks.count=kk;par.add(pks);}
-   for(let t=0;t<=L;t+=6){const x=x0+dx*t,z=z0+dz*t,p=new T.Mesh(new T.BoxGeometry(.2,4.3,.2),blk);p.position.set(x,ground(z)+2.1,z);par.add(p);}
-   [.35,3.7].forEach(hh=>{for(let t=0;t<L;t+=6){const tt=Math.min(6,L-t),x=x0+dx*(t+tt/2),z=z0+dz*(t+tt/2),r=new T.Mesh(new T.BoxGeometry(Math.abs(dx)*tt+.1,.12,Math.abs(dz)*tt+.1),blk);
-     r.position.set(x,ground(z)+hh,z);par.add(r);}});});
- pk.count=k; yard.add(pk);
- // trees: rounded deciduous crowns and a few spruces, scattered in a band behind the lot and off to the sides
- const crownG=new T.IcosahedronGeometry(1,1), coneG=new T.ConeGeometry(1,1,9), trunkG=new T.CylinderGeometry(.5,.7,1,7);
- const leaf=new T.MeshStandardMaterial({color:0xffffff,roughness:1}), bark=new T.MeshStandardMaterial({color:0x4b3b2e,roughness:1});
- const spots=[];let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
- for(let i=0;i<110;i++)spots.push([-110+rnd()*270,92+rnd()*50]);        // far side of the yard, behind every yard-side camera
- for(let i=0;i<26;i++)spots.push([-90+rnd()*230,-95-rnd()*70]);        // well past the front of the house: street trees
- for(let i=0;i<16;i++)spots.push([-95+rnd()*45,-45+rnd()*85]);         // beyond the east neighbor
- for(let i=0;i<16;i++)spots.push([75+rnd()*45,-45+rnd()*85]);          // beyond the west neighbor
- const haze=(c,z)=>c.lerp(new T.Color(0xb8c6cf),Math.min(.45,Math.max(0,(Math.abs(z-10)-60)/160)));   // farther trees fade toward the sky
- const crowns=new T.InstancedMesh(crownG,leaf,spots.length*6), cones=new T.InstancedMesh(coneG,leaf,spots.length), trunks=new T.InstancedMesh(trunkG,bark,spots.length);
- const pal=[0x3f5a2e,0x4b6634,0x557139,0x36502a,0x5e7a3f,0x465e2f].map(c=>new T.Color(c));
- let ci=0,ki=0;const q=new T.Quaternion(),sc=new T.Vector3(),ps=new T.Vector3();
- spots.forEach(([x,z],i)=>{const g=ground(z),H=(z<0?20:24)+rnd()*(z<0?14:22),spruce=rnd()<.22;
-   mt.compose(ps.set(x,g+H*.16,z),q.identity(),sc.set(H*.02,H*.32,H*.02));trunks.setMatrixAt(i,mt);
-   if(spruce){mt.compose(ps.set(x,g+H*.5,z),q,sc.set(H*.19,H*.95,H*.19));cones.setMatrixAt(ki,mt);cones.setColorAt(ki++,haze(new T.Color(0x2c4426),z));return;}
-   const R=H*.27;for(let j=0;j<4;j++){const a=rnd()*6.28,d=j?R*.6:0;
-     mt.compose(ps.set(x+Math.cos(a)*d,g+H*.56+(j?-R*.25+rnd()*R*.45:R*.15),z+Math.sin(a)*d),q.setFromAxisAngle(sc.set(0,1,0),rnd()*6),sc.set(R*(.8+rnd()*.3),R*(.7+rnd()*.25),R*(.8+rnd()*.3)));
-     crowns.setMatrixAt(ci,mt);crowns.setColorAt(ci++,haze(pal[(rnd()*pal.length)|0].clone().offsetHSL(0,0,(rnd()-.5)*.05),z));}
-   // understory: a couple of low shrub masses so the line reads as a woods edge, not bare trunks
-   for(let j=0;j<2;j++){const r=H*(.13+rnd()*.07),a=rnd()*6.28;mt.compose(ps.set(x+Math.cos(a)*r*.8,g+r*.55,z+Math.sin(a)*r*.8),q.identity(),sc.set(r*1.3,r*.8,r*1.3));
-     crowns.setMatrixAt(ci,mt);crowns.setColorAt(ci++,haze(pal[(rnd()*pal.length)|0].clone().offsetHSL(0,-.05,-.04),z));}});
- crowns.count=ci;cones.count=ki;[crowns,cones,trunks].forEach(m=>{m.frustumCulled=false;yard.add(m);});})();
 (function(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#8c877d';g.fillRect(0,0,256,256);
  for(let i=0;i<1400;i++){const r=2+Math.random()*5,v=120+Math.random()*90|0;g.fillStyle=`rgb(${v},${v-6},${v-16})`;g.beginPath();g.ellipse(Math.random()*256,Math.random()*256,r,r*.75,Math.random()*3,0,7);g.fill();}
  const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(1/3,1/3);t.encoding=T.sRGBEncoding;M.rock=new T.MeshStandardMaterial({map:t,roughness:1});})();
 
-// house: white lap siding down to ~1' above the patio line, so only ~1'-6" of foundation shows at the rock strip
-const SID=1.0, ROOFC=new T.MeshStandardMaterial({color:0x4a4c50,roughness:.85});
-(function(){const c=document.createElement('canvas');c.width=64;c.height=192;const g=c.getContext('2d');   // one foot = three 4" laps
- for(let k=0;k<3;k++){const y=k*64,gr=g.createLinearGradient(0,y,0,y+64);gr.addColorStop(0,'#fbfbf8');gr.addColorStop(.85,'#ecece7');gr.addColorStop(1,'#d9d9d3');
-   g.fillStyle=gr;g.fillRect(0,y,64,64);g.fillStyle='rgba(60,60,55,.45)';g.fillRect(0,y+61,64,3);}
- const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.encoding=T.sRGBEncoding;t.anisotropy=8;
- M.siding=new T.MeshStandardMaterial({map:t,roughness:.8});})();
-M.trim=new T.MeshStandardMaterial({color:0xfbfbf9,roughness:.55});
-const SOFF=new T.MeshStandardMaterial({color:0xe6e6e1,roughness:.8}), GUT=new T.MeshStandardMaterial({color:0xf2f2ef,roughness:.45,metalness:.1});
+// house: white siding down to ~1' above the patio line, so only ~1'-6" of foundation shows at the rock strip
+const SID=1.0, ROOFC=new T.MeshStandardMaterial({color:0x45474a,roughness:.9});
 box(HX0,HX1,-1.5,SID,-30,0,M.found);
 box(HX0,HX1,SID,20,-30,0,M.siding);
-box(HX0-.03,HX1+.03,19.55,20,-30.03,0.03,M.trim);                               // frieze board
-// eaves: 16" overhang, soffit underneath (casts the shadow line on the siding), fascia, K-style gutter, two downspouts
-const EV=1.35;
-box(HX0-EV,HX1+EV,20.25,20.4,-30-EV,EV,SOFF);
-box(HX0-EV-.08,HX1+EV+.08,20.05,20.6,EV,EV+.08,M.trim); box(HX0-EV-.08,HX1+EV+.08,20.05,20.6,-30-EV-.08,-30-EV,M.trim);
-box(HX0-EV-.08,HX0-EV,20.05,20.6,-30-EV,EV,M.trim); box(HX1+EV,HX1+EV+.08,20.05,20.6,-30-EV,EV,M.trim);
-box(HX0-EV-.1,HX1+EV+.1,20.0,20.42,EV+.08,EV+.42,GUT);
-[HX0+.6,HX1-.6].forEach(x=>{box(x-.12,x+.12,-1.0,20.05,.06,.3,GUT);box(x-.12,x+.12,19.9,20.1,.06,EV+.25,GUT);box(x-.13,x+.13,-1.0,-.7,.06,1.2,GUT);});
-(function(){const r=22,R=new T.ConeGeometry(r,7,4,1);R.rotateY(Math.PI/4);const s=r*Math.SQRT2;R.scale((HX1-HX0+2*EV+.3)/s,1,(30+2*EV+.3)/s);
- const m=new T.Mesh(R,ROOFC);m.position.set((HX0+HX1)/2,20.6+3.5,-15);m.castShadow=true;scene.add(m);})();
+box(HX0-.2,HX1+.2,20,20.4,-30.2,0.2,M.trim);
+(function(){const r=22,R=new T.ConeGeometry(r,7,4,1);R.rotateY(Math.PI/4);const s=r*Math.SQRT2;R.scale((HX1-HX0+1.6)/s,1,31.6/s);
+ const m=new T.Mesh(R,ROOFC);m.position.set((HX0+HX1)/2,20.4+3.5,-15);m.castShadow=true;scene.add(m);})();
 box(BAY0,BAY1,-1.5,SID,-0.2,Z0,M.found); box(BAY0,BAY1,SID,10.5,-0.2,Z0,M.siding);
-box(BAY0-.6,BAY1+.6,10.35,10.5,-0.2,Z0+.6,SOFF); box(BAY0-.6,BAY1+.6,10.5,11.1,-0.2,Z0+.6,ROOFC);
-box(BAY0-.65,BAY1+.65,10.3,10.62,Z0+.6,Z0+.72,M.trim); box(BAY0-.7,BAY1+.7,10.25,10.6,Z0+.72,Z0+.98,GUT);
-// sliding door: white vinyl frame, two panels on offset tracks, handle, threshold
-(function(){const x0=BAYC-3,x1=BAYC+3,y0=SILL,y1=SILL+6.7,zf=Z0+.03,F=.2;
- box(x0,x1,y0,y1,Z0-.15,Z0-.02,M.glass);
- box(x0-.3,x1+.3,y1,y1+.35,Z0-.15,Z0+.1,M.trim); box(x0-.3,x0,y0,y1,Z0-.15,Z0+.1,M.trim); box(x1,x1+.3,y0,y1,Z0-.15,Z0+.1,M.trim);
- box(x0-.3,x1+.3,y0-.12,y0,Z0-.15,Z0+.16,new T.MeshStandardMaterial({color:0x9a9a96,roughness:.5,metalness:.5}));
- [[x0,BAYC+.05,zf-.08,zf-.03],[BAYC-.05,x1,zf-.02,zf+.03]].forEach(([a,b,z0,z1])=>{
-   box(a,b,y0,y0+F*1.2,z0,z1,M.trim); box(a,b,y1-F,y1,z0,z1,M.trim); box(a,a+F,y0,y1,z0,z1,M.trim); box(b-F,b,y0,y1,z0,z1,M.trim);});
- box(BAYC-.32,BAYC-.24,y0+3.0,y0+3.9,zf+.03,zf+.09,new T.MeshStandardMaterial({color:0x2b2b2b,roughness:.4,metalness:.6}));})();
-// windows: white double-hung with casing, head, sill and meeting rail (placement still approximate)
-function win(a,b,y0,y1){box(a,b,y0,y1,-0.2,0.0,M.glass);
- box(a-.3,b+.3,y1,y1+.38,-0.2,0.14,M.trim); box(a-.25,a,y0,y1,-0.2,0.12,M.trim); box(b,b+.25,y0,y1,-0.2,0.12,M.trim);
- box(a-.35,b+.35,y0-.14,y0,-0.2,0.24,M.trim); box(a-.2,b+.2,y0-.45,y0-.14,-0.2,0.08,M.trim);
- const ym=(y0+y1)/2; box(a,b,ym-.07,ym+.07,-0.2,0.07,M.trim); box(a,b,y0,y0+.16,-0.2,0.05,M.trim); box(a,b,y1-.12,y1,-0.2,0.05,M.trim);
- box(a,a+.1,y0,y1,-0.2,0.05,M.trim); box(b-.1,b,y0,y1,-0.2,0.05,M.trim);}
-[[0.5,4],...[0.25,0.5,0.75].map(f=>{const c=BAY1+(HX1-BAY1)*f;return [c-1.5,c+1.5];})].forEach(([a,b])=>win(a,b,SILL+2.3,SILL+6.7));
-[[0.5,4],[BAYC-1.75,BAYC+1.75],[27,30.5]].forEach(([a,b])=>win(a,b,13.2,17.4));
+box(BAY0-.3,BAY1+.3,10.5,11.1,-0.2,Z0+.35,ROOFC);
+box(BAYC-3,BAYC+3,SILL,SILL+6.7,Z0-.15,Z0+.03,M.glass);
+box(BAYC-3.25,BAYC+3.25,SILL+6.7,SILL+7,Z0-.15,Z0+.07,M.trim);
+box(BAYC-3.25,BAYC-3,SILL,SILL+6.7,Z0-.15,Z0+.07,M.trim);box(BAYC+3,BAYC+3.25,SILL,SILL+6.7,Z0-.15,Z0+.07,M.trim);box(BAYC-.06,BAYC+.06,SILL,SILL+6.7,Z0-.15,Z0+.07,M.trim);
+// windows: placeholders only (send a photo of the back of the house to match them)
+[[0.5,4],...[0.25,0.5,0.75].map(f=>{const c=BAY1+(HX1-BAY1)*f;return [c-1.5,c+1.5];})].forEach(([a,b])=>{box(a,b,SILL+2.3,SILL+6.7,-0.2,0.04,M.glass);box(a-.2,b+.2,SILL+2.1,SILL+2.3,-0.2,0.12,M.trim);});
+[[0.5,4],[BAYC-1.75,BAYC+1.75],[27,30.5]].forEach(([a,b])=>{box(a,b,13.2,17.4,-0.2,0.04,M.glass);box(a-.2,b+.2,13,13.2,-0.2,0.12,M.trim);});
 
 // 2' river-rock strip along the house, corner to corner, filled up flush with the patio (top ~3/8" below the pavers so
 // stones don't roll onto the patio). Past the patio ends it sits ~7-9" above the side-yard grade, so a low Granite
@@ -620,7 +511,7 @@ const gzRug=new T.Group(); scene.add(gzRug);
  box(ex1,wb-s,-0.6,0.02,nb-s,nb,M.borderZ,{...P,uo:ex1,vo:nb-s});})();         // north, sailor
 const GZ_N0=scene.children.length;
 (function(){
- GX.forEach(x=>GZ.forEach(z=>{box(x-PO/2,x+PO/2,0,GH,z-PO/2,z+PO/2,M.cedar);box(x-5/12,x+5/12,0,.35,z-5/12,z+5/12,M.cedar);blob(scene,x,z,.85,.85,.4);}));
+ GX.forEach(x=>GZ.forEach(z=>{box(x-PO/2,x+PO/2,0,GH,z-PO/2,z+PO/2,M.cedar);box(x-5/12,x+5/12,0,.35,z-5/12,z+5/12,M.cedar);}));
  GZ.forEach(z=>box(GX[0]-.5,GX[1]+.5,GH,GH+.6,z-.2,z+.2,M.cedar));
  GX.forEach(x=>box(x-.2,x+.2,GH,GH+.6,GZ[0]-.5,GZ[1]+.5,M.cedar));
  const brace=new T.BoxGeometry(.25,2.2,.25);
@@ -645,10 +536,10 @@ const GZ_N0=scene.children.length;
    geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.computeVertexNormals();}
   const roof=new T.Mesh(geo,top);roof.castShadow=true;roof.receiveShadow=true;scene.add(roof);
   const ceil=new T.Mesh(geo,under);ceil.receiveShadow=true;scene.add(ceil);
-  const cap=new T.MeshStandardMaterial({color:0x2a1e17,roughness:.4,metalness:.55}), raf=M.cedar;
+  const cap=new T.MeshStandardMaterial({color:0x2a1e17,roughness:.6,metalness:.2}), raf=M.cedar;
   const beam=(P,Q,w,hgt,mat,drop)=>{const L=P.distanceTo(Q),m=new T.Mesh(new T.BoxGeometry(w,hgt,L),mat);m.position.copy(P).add(Q).multiplyScalar(.5);m.position.y-=drop;
     m.lookAt(Q.x,Q.y-drop,Q.z);m.castShadow=true;scene.add(m);return m;};
-  C.forEach(c=>{beam(c,A,.32,.12,cap,-.06); beam(c,A,.3,.45,raf,.3);});                                  // hip caps on top, hip rafters below
+  C.forEach(c=>{beam(c,A,.36,.14,cap,-.07); beam(c,A,.2,.4,raf,.42);});                                  // hip caps on top, hip rafters below
   for(let k=0;k<4;k++){const c1=C[k],c2=C[(k+1)%4],e=c2.clone().sub(c1).normalize(),mid=c1.clone().add(c2).multiplyScalar(.5);
    [ROOF*.25,ROOF*.5,ROOF*.75].forEach(u=>{const P=c1.clone().addScaledVector(e,u),f=Math.min(u,ROOF-u)/h,Q=P.clone().lerp(A.clone().sub(mid).add(P),f);beam(P,Q,.2,.3,raf,.22);});}
   const fin=new T.Mesh(new T.CylinderGeometry(.12,.3,.45,12),cap);fin.position.set(GCX,y0+RH+.12,GCZ);fin.castShadow=true;scene.add(fin);
@@ -660,15 +551,15 @@ const GZ_N0=scene.children.length;
  box(x0,x1,0,1.35,z0,z1,M.furnFrame,P); box(x0+.55,x1,1.35,1.7,z0+.05,z1-.05,M.cushion,P); box(x0,x0+.6,1.35,2.65,z0,z1,M.cushion,P);
  box(x1,x1+3.6,0,1.35,z0,z0+2.9,M.furnFrame,P); box(x1,x1+3.6,1.35,1.7,z0+.55,z0+2.85,M.cushion,P); box(x1,x1+3.6,1.35,2.65,z0,z0+.6,M.cushion,P);
  box(x1+3.6,x1+3.9,0,2.0,z0,z0+2.9,M.furnFrame,P); box(x0,x1,0,2.0,z1-.3,z1,M.furnFrame,P);
- SOFA_X=x0; blob(secSet,(x0+x1)/2,(z0+z1)/2,x1-x0,z1-z0,.42); blob(secSet,x1+1.95,z0+1.45,3.9,2.9,.42); SEC_SET=pivot(secSet,(x0+x1+3.9)/2,(z0+z1)/2);
+ SOFA_X=x0; SEC_SET=pivot(secSet,(x0+x1+3.9)/2,(z0+z1)/2);
  // loveseat (64" x 35") on the east posts facing the TV, two swivel barrel chairs north and south of the fire table
  const za=GCZ-32/12, zb=GCZ+32/12, lsSeat=new T.Group(); lsGroup.add(lsSeat); const L={parent:lsSeat};
  box(x0,x1,0,1.35,za+.3,zb-.3,M.furnFrame,L); box(x0+.55,x1,1.35,1.7,za+.32,zb-.32,M.cushion,L); box(x0,x0+.6,1.35,2.65,za+.3,zb-.3,M.cushion,L);
- box(x0,x1,0,2.0,za,za+.3,M.furnFrame,L); box(x0,x1,0,2.0,zb-.3,zb,M.furnFrame,L); blob(lsSeat,(x0+x1)/2,(za+zb)/2,x1-x0,zb-za,.42); LS_SEAT=pivot(lsSeat,(x0+x1)/2,GCZ);
+ box(x0,x1,0,2.0,za,za+.3,M.furnFrame,L); box(x0,x1,0,2.0,zb-.3,zb,M.furnFrame,L); LS_SEAT=pivot(lsSeat,(x0+x1)/2,GCZ);
  const fDS=M.furnFrame.clone(); fDS.side=T.DoubleSide; const cDS=M.cushion.clone(); cDS.side=T.DoubleSide;
  const mk=(g,geo,mat,y,z=0)=>{const m=new T.Mesh(geo,mat);m.position.set(0,y,z);m.castShadow=m.receiveShadow=true;g.add(m);return m;};
  function swivel(x,z,rot){const g=new T.Group();g.position.set(x,0,z);g.rotation.y=rot;lsGroup.add(g);   // local front faces -z
-   blob(g,0,0,2.2,2.2,.38,true); mk(g,new T.CylinderGeometry(.8,.9,.1,28),M.furnFrame,.05); mk(g,new T.CylinderGeometry(.16,.2,.5,16),M.furnFrame,.35);
+   mk(g,new T.CylinderGeometry(.8,.9,.1,28),M.furnFrame,.05); mk(g,new T.CylinderGeometry(.16,.2,.5,16),M.furnFrame,.35);
    mk(g,new T.CylinderGeometry(1.2,1.12,.72,32),M.furnFrame,.95);                     // seat base, top at 15.6"
    mk(g,new T.CylinderGeometry(1.06,1.06,.34,32),M.cushion,1.48,-.06);                 // seat cushion, ~18" seat height
    const A=3.9, S=-A/2;                                                                 // barrel back wraps ~220 degrees
@@ -699,7 +590,7 @@ const flames=[]; let fireLight;
 (function(){const L=50/12, Wd=25/12, H=24/12, cx=0, cz=0, P={parent:fireGroup};   // built in its own frame, placed by setSeat()
  const body=new T.MeshStandardMaterial({color:0x5a5b5c,roughness:.95}), ledge=new T.MeshStandardMaterial({color:0x8f8a82,roughness:.8});
  box(cx-Wd/2+.08,cx+Wd/2-.08,0,H-.17,cz-L/2+.08,cz+L/2-.08,body,P);
- box(cx-Wd/2,cx+Wd/2,H-.17,H,cz-L/2,cz+L/2,ledge,P); blob(fireGroup,cx,cz,Wd,L,.45);
+ box(cx-Wd/2,cx+Wd/2,H-.17,H,cz-L/2,cz+L/2,ledge,P);
  box(cx-.42,cx+.42,H-.02,H+.005,cz-1.45,cz+1.45,new T.MeshStandardMaterial({color:0x15171a,roughness:.6}),P);
  // fire glass
  const gl=new T.MeshStandardMaterial({color:0x2c6d8c,roughness:.15,metalness:.5});
@@ -739,11 +630,11 @@ const MK={black:new T.MeshStandardMaterial({color:0x1b1c1e,roughness:.45,metalne
   stain:new T.MeshStandardMaterial({color:0xaeb2b5,roughness:.35,metalness:.8}),plate:new T.MeshStandardMaterial({color:0x2a2b2c,roughness:.55,metalness:.4}),
   gray:new T.MeshStandardMaterial({color:0x4a4d50,roughness:.6,metalness:.2}),tank:new T.MeshStandardMaterial({color:0xe9e7e2,roughness:.5}),
   knob:new T.MeshStandardMaterial({color:0xc9ccce,roughness:.3,metalness:.9})};
-function appliance(z0,len,d=2.4){const g=new T.Group();g.position.set(WALL,0,z0+len/2);furn.add(g);blob(g,d/2,0,d,len*.8,.45);return g;}
+function appliance(z0,len){const g=new T.Group();g.position.set(WALL,0,z0+len/2);furn.add(g);return g;}
 // each appliance: its group, side tables folded (stored) and raised (cooking), and its footprint along the wall each way
 const COOK={};
 // Weber Spirit E-425: 52" wide with side tables, 31" deep, lid closed ~47"
-(function(){const [z0,L,D]=CK[0],g=appliance(z0,L,D),body=2.5,w=(L-body)/2;
+(function(){const [z0,L,D]=CK[0],g=appliance(z0,L),body=2.5,w=(L-body)/2;
  [[-1,1],[1,1]].forEach(([a])=>[.25,D-.25].forEach(v=>part(g,.1,2.8,.1,a*(body/2-.08),1.4,v,MK.black)));
  part(g,body,.06,D-.4,0,.5,D/2,MK.black);
  cyl(g,.42,1.45,'y',0,.5+.72,D/2+.1,MK.tank);
@@ -758,7 +649,7 @@ const COOK={};
  COOK.grill={g,fold,open,stored:body+.14,used:L};
 })();
 // Weber Slate 36" griddle: 71.5" wide with side shelves, 28.4" deep, cooktop ~36"
-(function(){const [z0,L,D]=CK[1],g=appliance(z0,L,D),top=3.0,w=(L-top)/2;
+(function(){const [z0,L,D]=CK[1],g=appliance(z0,L),top=3.0,w=(L-top)/2;
  [-1,1].forEach(a=>[.2,D-.2].forEach(v=>part(g,.09,2.75,.09,a*(top/2-.05),1.37,v,MK.black)));
  part(g,top,.06,D-.35,0,.45,D/2,MK.black);
  part(g,top,.32,D-.2,0,2.6,D/2,MK.black);                                     // firebox
@@ -772,7 +663,7 @@ const COOK={};
  COOK.griddle={g,fold,open,stored:top+.13,used:L};
 })();
 // Ninja Woodfire grill on its stand: 34" x 26"
-(function(){const [z0,L,D]=CK[2],g=appliance(z0,L,D);
+(function(){const [z0,L,D]=CK[2],g=appliance(z0,L);
  [-1,1].forEach(a=>[.15,D-.15].forEach(v=>part(g,.08,2.45,.08,a*(L/2-.1),1.22,v,MK.black)));
  part(g,L,.06,D,0,2.45,D/2,MK.gray); part(g,L,.05,D-.2,0,.6,D/2,MK.black);
  part(g,1.75,.55,1.15,-.2,2.78,D/2,MK.gray);                                   // grill body
@@ -801,7 +692,7 @@ const deck=new T.Group(); furn.add(deck); const DBX=58/12, DBD=26/12, DBH=25/12;
  const body=new T.Mesh(new T.BoxGeometry(DBX,DBH-.18,DBD),mat);body.position.y=(DBH-.18)/2;
  const lid=new T.Mesh(new T.BoxGeometry(DBX+.08,.18,DBD+.08),dark);lid.position.y=DBH-.09;
  const h=new T.Mesh(new T.BoxGeometry(.6,.06,.08),dark);h.position.set(0,DBH-.3,DBD/2+.03);
- [body,lid,h].forEach(m=>{m.castShadow=m.receiveShadow=true;deck.add(m);});blob(deck,0,0,DBX,DBD,.4);})();
+ [body,lid,h].forEach(m=>{m.castShadow=m.receiveShadow=true;deck.add(m);});})();
 const DECK={east:[1.6+DBX/2,[1.2,7.0]], west:[24.2+DBX/2,[23.6,29.6]]};
 let deckMode='east';
 function setDeck(m){deckMode=m;deck.visible=m!=='none';const r=DECK[m];if(r)deck.position.set(r[0],0,0.3+DBD/2);rockVis();}
@@ -814,7 +705,7 @@ const TW=40.5/12, TL=78/12, CHD=1.66;
 const TCX=WALL+COOKD+4+CHD+TW/2, TCZ=12.4;   // 4'-0" aisle behind the cook line
 const MD={frame:new T.MeshStandardMaterial({color:0x2f3236,roughness:.4,metalness:.55}),teak:new T.MeshStandardMaterial({color:0x9b6b41,roughness:.65}),
   cush:new T.MeshStandardMaterial({color:0xcfc8ba,roughness:1}),fabric:new T.MeshStandardMaterial({color:0xd8cfbd,roughness:.95,side:T.DoubleSide})};
-(function(){const g=new T.Group();g.position.set(TCX,0,TCZ);furn.add(g);DINE.push(g);const TH=29/12;blob(g,0,0,TW,TL,.3);
+(function(){const g=new T.Group();g.position.set(TCX,0,TCZ);furn.add(g);DINE.push(g);const TH=29/12;
  const n=7,gap=.035,sw=(TW-.3-(n-1)*gap)/n;
  for(let i=0;i<n;i++){const x=-TW/2+.15+sw/2+i*(sw+gap);part(g,TL-.3,.08,sw,0,TH-.04,x,MD.teak);}
  part(g,TL,.12,.12,0,TH-.06,TW/2-.06,MD.frame); part(g,TL,.12,.12,0,TH-.06,-TW/2+.06,MD.frame);
@@ -822,7 +713,7 @@ const MD={frame:new T.MeshStandardMaterial({color:0x2f3236,roughness:.4,metalnes
  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>part(g,.17,TH-.12,.17,b*(TL/2-.2),(TH-.12)/2,a*(TW/2-.2),MD.frame));
  part(g,TL-.6,.06,.06,0,.5,0,MD.frame);
 })();
-function chairAt(x,z,rot){const g=new T.Group();g.position.set(x,0,z);g.rotation.y=rot;furn.add(g);DINE.push(g);blob(g,0,0,1.7,1.7,.32);
+function chairAt(x,z,rot){const g=new T.Group();g.position.set(x,0,z);g.rotation.y=rot;furn.add(g);DINE.push(g);
  const W=1.75,Dp=1.75,SH=1.45;   // ~21" x 21", seat 17-1/2"
  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>part(g,.09,SH-.08,.09,a*(W/2-.08),(SH-.08)/2,b*(Dp/2-.08),MD.frame));
  part(g,W,.07,Dp,0,SH-.1,0,MD.frame);
@@ -847,10 +738,9 @@ const umbOpen=new T.Group(), umbClosed=new T.Group(); umb.add(umbOpen,umbClosed)
    cp.setXYZ(i,x*k,cp.getY(i)-.2*s*Math.sin(Math.PI*Math.min(t,1))*.9,z*k);}
  cg.computeVertexNormals();
  const can=new T.Mesh(cg,MD.fabric);can.position.y=top-.55;can.castShadow=true;can.receiveShadow=true;umbOpen.add(can);
- const vg=new T.CylinderGeometry(4.5,4.52,.42,96,1,true),vp=vg.attributes.position;
- for(let i=0;i<vp.count;i++){const x=vp.getX(i),z=vp.getZ(i),s=pan(x,z),k=1-.055*s;let y=vp.getY(i);if(y<0)y+=.12*Math.abs(Math.sin(Math.atan2(x,z)*16));vp.setXYZ(i,x*k,y,z*k);}
+ const vg=new T.CylinderGeometry(4.5,4.52,.34,96,1,true),vp=vg.attributes.position;
+ for(let i=0;i<vp.count;i++){const x=vp.getX(i),z=vp.getZ(i),s=pan(x,z),k=1-.055*s;let y=vp.getY(i);if(y<0)y+=.06*(1-Math.cos(Math.atan2(x,z)*16));vp.setXYZ(i,x*k,y,z*k);}
  vg.computeVertexNormals();const val=new T.Mesh(vg,MD.fabric);val.position.y=top-.55-.575-.2;val.castShadow=true;umbOpen.add(val);
-
  const vent=new T.Mesh(new T.ConeGeometry(.75,.35,8,1,true),MD.fabric);vent.position.y=top+.12;vent.castShadow=true;umbOpen.add(vent);
  for(let i=0;i<8;i++){const a=i/8*Math.PI*2+Math.PI/8;const r=new T.Mesh(new T.BoxGeometry(.04,.04,2.6),MD.frame);
    r.position.set(Math.sin(a)*1.25,top-1.0,Math.cos(a)*1.25);r.rotation.y=a;r.rotation.x=-0.62;umbOpen.add(r);}
@@ -880,7 +770,7 @@ window.__audit={
 // ---- views
 const EYE=5.4, eye=z=>ground(z)+EYE;     // standing eye height above the lawn under each spot
 const V={
-  yard:{p:[17.5,eye(44),44],t:[17.5,1.2,9]},
+  yard:{p:[17.5,eye(50),50],t:[17.5,1.2,9]},
   stairs:{p:[(ST0+ST1)/2,eye(29),29],t:[(ST0+ST1)/2-1,1.2,8]},
   door:{p:[BAYC,SILL-SILL/4+EYE,Z0+0.6],t:[18,1.6,24]},
   gazebo:{p:[SOFA_X+1.3,3.9,GCZ+0.7],t:[GX[1],2.9,GCZ-0.1]},
@@ -898,7 +788,7 @@ const ORBIT_VIEWS={aerial:1,top:1};
 let mode='eye', yaw=0, pitch=0, look=null;
 const hintEl=document.getElementById('hint');
 const TOUCH=matchMedia('(pointer:coarse)').matches;
-function setMode(m){mode=m;controls.enabled=m==='orbit';document.body.dataset.mode=m;
+function setMode(m){mode=m;controls.enabled=m==='orbit';
   if(typeof eggOn!=='undefined'&&eggOn&&m==='eye'){hintEl.innerHTML=(TOUCH?'<b>Drag</b> to look · <b>arrows</b> to lean · <b>pinch</b> to zoom · <b>tap</b> to focus':'<b>Drag</b> to look · <b>W A S D</b> to lean · <b>scroll</b> to zoom · <b>click</b> to focus');return;}
   if(typeof tapeOn!=='undefined'&&tapeOn){hintEl.innerHTML=(TOUCH?'<b>Tap</b>':'<b>Click</b>')+' two points to measure · a third starts over';return;}
   hintEl.innerHTML=TOUCH?(m==='orbit'?'<b>Drag</b> to orbit · <b>pinch</b> to zoom · <b>tap</b> furniture to move it':'<b>Tap</b> a spot to walk there · <b>drag</b> to look · <b>pinch</b> to zoom')
@@ -907,7 +797,7 @@ function syncLook(){const d=new T.Vector3();camera.getWorldDirection(d);yaw=Math
 function applyLook(){camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);}
 // on a tall phone screen keep at least ~60 degrees of view side to side
 function baseFov(){const a=camera.aspect||1.5;return a>=1.2?50:Math.min(78,2*Math.atan(Math.tan(30*Math.PI/180)/a)*180/Math.PI);}
-function go(name,instant){poke(1500);const v=V[name];const p=new T.Vector3(...v.p),t=new T.Vector3(...v.t);
+function go(name,instant){const v=V[name];const p=new T.Vector3(...v.p),t=new T.Vector3(...v.t);
   if(ORBIT_VIEWS[name]&&camera.aspect<1)p.sub(t).multiplyScalar(Math.min(1.6,1.15/camera.aspect)).add(t);   // back the aerial views off on a tall phone so the whole patio fits
   $$('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.view===name));
   if(typeof setEgg==='function')setEgg(EGGS[name]?name:null);
@@ -931,10 +821,7 @@ controls.addEventListener('start',()=>{anim=null;$$('[data-view]').forEach(b=>b.
 })();
 // tap / click a spot: in the aerial views the camera glides so that spot becomes the centre you orbit around;
 // in the eye-level views you walk to it (standing on it if it's floor or lawn, stopping short if it's a wall or furniture)
-let glide=null; var tapEaten=-1, dirtyUntil=0;
-function poke(ms=800){dirtyUntil=Math.max(dirtyUntil,performance.now()+ms);}
-['pointerdown','pointerup','keydown','keyup','wheel','click','touchstart','touchmove','resize'].forEach(t=>addEventListener(t,()=>poke(900),{passive:true,capture:true}));
-stage.addEventListener('pointermove',()=>poke(400),{passive:true}); poke(6000);
+let glide=null; var tapEaten=-1;
 (function(){const el=renderer.domElement, rc=new T.Raycaster(); let down=null, multi=false;
  const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
  el.addEventListener('pointerdown',e=>{if(!e.isPrimary){multi=true;return;}multi=false;down={x:e.clientX,y:e.clientY,t:performance.now()};});
@@ -979,7 +866,6 @@ addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 addEventListener('blur',()=>keys.clear());
 function sw(id,fn){const el=document.getElementById(id);el.addEventListener('click',()=>{const on=el.getAttribute('aria-checked')!=='true';el.setAttribute('aria-checked',on);fn(on);});return el;}
 sw('t-furn',on=>{furn.visible=on;});
-sw('t-yard',on=>{yard.visible=on;});
 $$('[data-seat]').forEach(b=>b.addEventListener('click',()=>{setSeat(b.dataset.seat);press('[data-seat]',b);}));
 window.__seat=m=>{setSeat(m);press('[data-seat]',document.querySelector(`[data-seat="${m}"]`));};
 $$('[data-cook]').forEach(b=>b.addEventListener('click',()=>{setCook(b.dataset.cook==='none'?null:b.dataset.cook);press('[data-cook]',b);}));
@@ -1116,7 +1002,6 @@ let season='summer', mins=900, lightMode='auto', lightsOn=false;
 const C=(h)=>new T.Color(h), SKY_DAY=C(0xcfdbe6), SKY_DUSK=C(0xe9a57e), SKY_NIGHT=C(0x0c1424), SUN_W=C(0xfff3e0), SUN_O=C(0xffa860);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function fmt(m){const h=Math.floor(m/60)%24,mm=Math.round(m%60);return `${(h+11)%12+1}:${String(mm).padStart(2,'0')} ${h<12?'AM':'PM'}`;}
-let ENVM=null;
 function applySun(){
   const s=SEASON[season], p=sunPos(s.doy,mins,s.tz), alt=p.alt;
   const ca=Math.cos(alt*R), dir=new T.Vector3(-ca*Math.sin(p.az*R), Math.sin(alt*R), ca*Math.cos(p.az*R));
@@ -1128,11 +1013,6 @@ function applySun(){
   hemi.intensity=0.06+0.44*tw; hemi.color.set(tw<0.5?0x8fa6d8:0xeef2f6);
   const sky=new T.Color(); if(alt>=10)sky.copy(SKY_DAY); else if(alt>=0)sky.copy(SKY_DUSK).lerp(SKY_DAY,alt/10); else sky.copy(SKY_NIGHT).lerp(SKY_DUSK,clamp((alt+9)/9,0,1));
   scene.background.copy(sky); scene.fog.color.copy(sky);
-  skyU.hor.value.copy(sky); skyU.bot.value.copy(sky);
-  const zen=new T.Color(); if(alt>=10)zen.set(0x5d8fc9); else if(alt>=0)zen.set(0x5a6f9a).lerp(new T.Color(0x5d8fc9),alt/10); else zen.set(0x070b16).lerp(new T.Color(0x3c4f78),clamp((alt+9)/9,0,1));
-  skyU.top.value.copy(zen);
-  if(!ENVM){ENVM=new Set();scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial&&(m.metalness>=.2||m===M.glass)){m.envMap=envCube;m.needsUpdate=true;ENVM.add(m);}});}
-  const ek=0.1+0.9*tw; ENVM.forEach(m=>m.envMapIntensity=ek);
   lightsOn=lightMode==='on'||(lightMode==='auto'&&alt<3);
   nightGroup.visible=lightsOn;
   const dark=alt<3;
@@ -1160,7 +1040,6 @@ function dimLine(a,b,mat,parent){const A=new T.Vector3(...a),B=new T.Vector3(...
   const pts=[A,B,A.clone().add(t),A.clone().sub(t),B.clone().add(t),B.clone().sub(t)];
   const g=new T.BufferGeometry().setFromPoints(pts);g.setIndex([0,1,2,3,4,5]);
   const l=new T.LineSegments(g,mat);l.renderOrder=20;l.frustumCulled=false;parent.add(l);return l;}
-// these strings describe the planned table spot, so they hide once the dining set is dragged somewhere else
 function diningHome(){const p=dining.position;return Math.abs(p.x-TCX)<.05&&Math.abs(p.z-TCZ)<.05&&Math.abs(dining.rotation.y)<.01;}
 function dim(a,b,text,sub,when){const line=dimLine(a,b,dimMat,dimGroup);const el=document.createElement('div');el.className='dim';
   el.innerHTML=text+(sub?`<small>${sub}</small>`:'');dimsEl.appendChild(el);
@@ -1233,37 +1112,20 @@ function dimTick(){const w=stage.clientWidth,h=stage.clientHeight,placed=[];
     if(_pv.z>1||Math.abs(_pv.x)>1.05||Math.abs(_pv.y)>1.05){d.el.style.display='none';return;}
     const x=(_pv.x+1)/2*w,y=(1-_pv.y)/2*h;
     if(!d.w){d.el.style.display='block';d.w=d.el.offsetWidth;d.h=d.el.offsetHeight;}
-    const sc=w<500?.9:1, hw=d.w*sc/2+3, hh=d.h*sc/2+2, step=d.h*sc+5;
-    let dy=null;for(const o of [0,-step,step,-2*step,2*step]){const r=[x-hw,y+o-hh,x+hw,y+o+hh];
-      if(!placed.some(q=>r[0]<q[2]&&r[2]>q[0]&&r[1]<q[3]&&r[3]>q[1])){placed.push(r);dy=o;break;}}
-    if(dy===null){d.el.style.display='none';return;}
-    d.el.style.display='block';d.el.classList.toggle('nup',dy<0);d.el.classList.toggle('ndn',dy>0);d.el.style.setProperty('--lh',(Math.abs(dy)/sc)+'px');
-    d.el.style.transform=`translate(${x}px,${y+dy}px) translate(-50%,-50%) scale(${sc})`;});}
-// controls start tucked away on phones (the sheet peeks at the bottom) and open on wider screens.
-// On phones the sheet has three heights: peek, half (the scene stays visible above it) and full. Tap or swipe the handle.
-var STATE_APPLYING=false;
+    const r=[x-d.w/2-3,y-d.h/2-2,x+d.w/2+3,y+d.h/2+2];
+    if(placed.some(q=>r[0]<q[2]&&r[2]>q[0]&&r[1]<q[3]&&r[3]>q[1])){d.el.style.display='none';return;}
+    placed.push(r);d.el.style.display='block';d.el.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;});}
+// controls start tucked away on phones (the sheet peeks at the bottom) and open on wider screens
 (function(){const phone=matchMedia('(max-width:760px)'),bar=document.getElementById('sheetBar'),panel=document.getElementById('panel');
- let st='open';
- const set=v=>{if(v===true)v='closed';if(v===false)v='open';if(!phone.matches&&v==='half')v='open';
-   const was=st;st=v;document.body.classList.toggle('closed',v==='closed');document.body.classList.toggle('half',v==='half');
-   bar.setAttribute('aria-expanded',v!=='closed');if(v!=='closed'&&was==='closed'&&phone.matches)panel.scrollTop=0;};
- window.__sheet=v=>{if(v)set(v);return st;};
- set(phone.matches?'closed':'open');
- const up={closed:'half',half:'open',open:'open'}, down={open:'half',half:'closed',closed:'closed'};
- let sy=null,swiped=false;
- bar.addEventListener('pointerdown',e=>{sy=e.clientY;swiped=false;});
- bar.addEventListener('pointerup',e=>{if(sy==null)return;const dy=e.clientY-sy;sy=null;if(Math.abs(dy)>24){swiped=true;set(dy<0?up[st]:down[st]);}});
- bar.addEventListener('click',()=>{if(swiped){swiped=false;return;}set(st==='closed'?'half':st==='half'?'open':'closed');});
- document.getElementById('hideBtn').addEventListener('click',()=>set('closed'));
- document.getElementById('openBtn').addEventListener('click',()=>set('open'));
- phone.addEventListener('change',e=>set(e.matches?'closed':'open'));
- // on a phone, picking a view or a scene tucks the sheet away so you can see it
- let closeT=0; panel.addEventListener('click',e=>{if(!phone.matches||STATE_APPLYING)return;
-   if(e.target.closest('[data-view],[data-scene]')){clearTimeout(closeT);closeT=setTimeout(()=>set('closed'),700);return;}
-   // a show/hide switch or option from the full sheet: drop to half height with that control at the top, so the change is visible
-   const c=e.target.closest('.sw,.seg button');if(!c||st!=='open')return;
-   const row=c.closest('.row')||c.closest('.seg');clearTimeout(closeT);
-   closeT=setTimeout(()=>{const off=row.getBoundingClientRect().top-panel.getBoundingClientRect().top;panel.scrollTop+=off-58;set('half');},350);});})();
+ const set=closed=>{document.body.classList.toggle('closed',closed);bar.setAttribute('aria-expanded',!closed);if(!closed&&phone.matches)panel.scrollTop=0;};
+ set(phone.matches);
+ bar.addEventListener('click',()=>set(!document.body.classList.contains('closed')));
+ document.getElementById('hideBtn').addEventListener('click',()=>set(true));
+ document.getElementById('openBtn').addEventListener('click',()=>set(false));
+ phone.addEventListener('change',e=>set(e.matches));
+ // on a phone, picking a view tucks the sheet away so you can see it
+ let closeT=0; document.querySelector('.views').addEventListener('click',e=>{if(!e.target.closest('[data-view]')||!phone.matches)return;
+   clearTimeout(closeT);closeT=setTimeout(()=>set(true),700);});})();
 // ---- easter egg: click any view button three times quickly to unlock "Neighbor" -- the east neighbor up on a
 // stepladder behind their privacy fence, binoculars trained on your TV and fire table
 V.neighbor={p:[-12.6,ground(27)+7.1,27.5],t:[26,2.6,11.5]};
@@ -1305,7 +1167,7 @@ const EGGS={
 const peepEl=document.getElementById('peep'), winEl=document.getElementById('winpeep'), toastEl=document.getElementById('toast');
 var nbrOn=false, nbrBaseY=0, eggOn=null, lookAnim=null;
 function setNeighbor(on){setEgg(on?'neighbor':null);}
-function setEgg(name){eggOn=name;nbrOn=!!name;yardFenceE.visible=name!=='neighbor';Object.entries(EGGS).forEach(([k,e])=>e.grp.visible=k===name);const E=EGGS[name];
+function setEgg(name){eggOn=name;nbrOn=!!name;Object.entries(EGGS).forEach(([k,e])=>e.grp.visible=k===name);const E=EGGS[name];
   peepEl.classList.toggle('on',!!E&&E.ov==='peep');winEl.classList.toggle('on',!!E&&E.ov==='win');
   if(E){nbrBaseY=V[name].p[1];winEl.querySelector('.tag').textContent=E.tag;}setMode(mode);}
 // keep the snoop at their post: clamp position to the egg's box after any movement
@@ -1333,7 +1195,7 @@ const hostBar=new T.Group(); hostBar.visible=false; scene.add(hostBar);
 const HB=(function(){const i=1/12, L=76.0625*i, D=23.1875*i, H=42.9375*i, BL=73.75*i, BD=20.875*i, STEP=16.125*i, DROP=1.5625*i,
    CAST=2.9375*i, UNDER=39.625*i, LEG=3.5*i, TH=H-UNDER;
  const zb0=-D/2+0.6*i, zb1=zb0+BD;            // base sits ~1.7" back from the guest edge of the top, ~0.6" in from the server edge
- const tone=[0xa06c42,0x96653d,0xa7744a,0x9b6a43].map(c=>new T.MeshStandardMaterial({color:c,roughness:.85}));
+ const tone=[0xb27a47,0xa66f3e,0xbb8452,0xad7543].map(c=>new T.MeshStandardMaterial({color:c,roughness:.78}));
  const ced=tone[0], dark=new T.MeshStandardMaterial({color:0x1d1f21,roughness:.5,metalness:.5}), wheel=new T.MeshStandardMaterial({color:0x2b2b2b,roughness:.9});
  const slat=(function(){const c=document.createElement('canvas');c.width=64;c.height=256;const g=c.getContext('2d');g.fillStyle='#8c5a33';g.fillRect(0,0,64,256);
    for(let k=0;k<4;k++){const y=k*64;g.fillStyle=['#93603a','#87552f','#8f5d36','#835330'][k];g.fillRect(0,y+3,64,58);g.fillStyle='rgba(30,18,10,.85)';g.fillRect(0,y,64,3);
@@ -1373,7 +1235,7 @@ const HB=(function(){const i=1/12, L=76.0625*i, D=23.1875*i, H=42.9375*i, BL=73.
  // foot rail: round rail on the guest side, on standoffs just above the casters (height is adjustable)
  const fr=new T.Mesh(new T.CylinderGeometry(.75*i,.75*i,BL-LEG*.6,16),ced);fr.rotation.z=Math.PI/2;fr.position.set(0,6*i,zb1+1.6*i);fr.castShadow=true;hostBar.add(fr);meshes.push(fr);
  [-1,1].forEach(sx=>{b(sx*lx-1*i,sx*lx+1*i,5*i,7*i,zb1,zb1+1.6*i,dark);});
- meshes.forEach(m=>{m.userData.hb=true;}); blob(hostBar,0,(zb0+zb1)/2,BL,BD,.4);
+ meshes.forEach(m=>{m.userData.hb=true;});
  // footprint + working zones (shown while selected): 30" behind for the server, 24" in front for guests
  const foot=new T.Group(); foot.visible=false; hostBar.add(foot);
  const fill=(w,d,z,op)=>{const m=new T.Mesh(new T.PlaneGeometry(w,d),new T.MeshBasicMaterial({color:0x3fae5a,transparent:true,opacity:op,depthWrite:false}));
@@ -1473,7 +1335,6 @@ addItem('ninja',COOK.ninja.g,{name:'Ninja Woodfire grill on its stand',info:`34"
 addItem('gazebo',{userData:{}},{name:'Yardistry Meridian 12×12 gazebo',info:`posts ${ftin(GXo[1]-GXo[0])} out to out · roof ${ftin(ROOF)} square`});
 addItem('pw',pwGroup,{name:'Privacy wall + 55" TV',info:`Yardistry 12' Meridian privacy wall`});
 addItem('bed',bed,{name:'Arborvitae bed (Phase 2)',info:`retaining-wall bed off the east side`});
-addItem('yard',yard,{name:'Fence and trees',info:`rough context only, not surveyed`});
 // saved positions from last time on this device
 (function(){const v=savedItems();try{const old=JSON.parse(localStorage.getItem('patio.hostbar')||'null');if(old&&!v.bar&&isFinite(old.x))v.bar=[old.x,old.z,+old.r||0];}catch(_){}
   Object.entries(v).forEach(([k,p])=>{const it=ITEMS[k];if(it&&it.move&&Array.isArray(p))placeItem(it,p[0],p[1],p[2]);});})();
@@ -1527,10 +1388,7 @@ window.__place=(k,x,z,r)=>{placeItem(ITEMS[k],x,z,r);if(SEL)checkItem();return h
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;document.querySelector('#peep svg').setAttribute('viewBox',w<h?'13 30 74 40':'0 0 100 100');renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 new ResizeObserver(resize).observe(stage); resize();
 go('aerial',true); applySun();
-let last=performance.now(), lastDraw=0;
-const _fv=new T.Vector3();
-function fireInView(){if(!flames.length||!flames[0].visible)return false;for(let o=fireGroup;o;o=o.parent)if(!o.visible)return false;
-  fireGroup.getWorldPosition(_fv);_fv.y+=2;_fv.project(camera);return _fv.z<1&&Math.abs(_fv.x)<1.2&&Math.abs(_fv.y)<1.2;}
+let last=performance.now();
 (function loop(now){requestAnimationFrame(loop);const dt=Math.min(100,now-last);last=now;
   if(anim){let k=Math.min(1,(now-anim.s)/900);k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
     camera.position.lerpVectors(anim.p0,anim.p,k);const tt=new T.Vector3().lerpVectors(anim.t0,anim.t,k);camera.lookAt(tt);
@@ -1546,20 +1404,14 @@ function fireInView(){if(!flames.length||!flames[0].visible)return false;for(let
     if(keys.has('a')||keys.has('arrowleft'))camera.position.addScaledVector(r,-sp);
     if(!eggOn)$$('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));}
   if(playing){mins+=dt*0.06;if(mins>+clockEl.max)mins=+clockEl.min;clockEl.value=mins;applySun();}
+  fireTick(now/1000, lightsOn); dimTick();
   if(eggOn&&!anim&&mode==='eye'){eggClamp();camera.position.y=nbrBaseY+Math.sin(now/1000*1.4)*.035;
     if(lookAnim){let k=Math.min(1,(now-lookAnim.s)/450);k=1-Math.pow(1-k,3);yaw=lookAnim.y0+lookAnim.dy*k;pitch=lookAnim.p0+lookAnim.dp*k;applyLook();if(k>=1)lookAnim=null;}}
-  // draw only when something is changing (saves a phone's battery); the fire alone redraws at ~20 fps while it's on screen
-  const moved=mode==='orbit'&&!anim?controls.update():false;
-  const busy=anim||glide||held.size||(mode==='eye'&&keys.size)||playing||DRAG||(eggOn&&mode==='eye')||moved||now<dirtyUntil;
-  if(!busy&&!(fireInView()&&now-lastDraw>50))return;
-  fireTick(now/1000, lightsOn); dimTick();
-  skyDome.position.copy(camera.position);renderer.render(scene,camera);lastDraw=now;
-  if(moved||anim||glide||held.size||keys.size)stateChanged();})(performance.now());
-
+  if(mode==='orbit'&&!anim)controls.update();renderer.render(scene,camera);})(performance.now());
 
 // ---- share a view: everything on screen (camera, switches, time, moved furniture) rides in the link as #s=...
 const PAGES_URL='https://prateradam123.github.io/patio-design/', ON_PAGES=/github\.io$/.test(location.hostname);
-const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-yard','t-furn','t-fire','t-hbar','t-person'];
+const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person'];
 const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims'];
 const r2=v=>Math.round(v*100)/100;
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -1574,6 +1426,7 @@ function getState(){const st={v:1};
     if(Math.abs(p.x-h.x)>.01||Math.abs(p.z-h.z)>.01||Math.abs(i.root.rotation.y-h.r)>.001)it[i.key]=[r2(p.x),r2(p.z),+i.root.rotation.y.toFixed(3)];});
   if(Object.keys(it).length)st.it=it;
   return st;}
+var STATE_APPLYING=false;
 // apply a partial state: {sw:{id:0|1}, sg:{key:value}, m, it, c}
 function applyPartial(o){STATE_APPLYING=true;try{
   Object.entries(o.sg||{}).forEach(([k,v])=>{const b=v&&document.querySelector(`[data-${k}="${v}"]`);if(b&&b.getAttribute('aria-pressed')!=='true')b.click();});
@@ -1585,47 +1438,34 @@ function applyPartial(o){STATE_APPLYING=true;try{
     camera.position.set(c[1],c[2],c[3]);
     if(c[0]==='o'){controls.target.set(c[4],c[5],c[6]);camera.fov=50;camera.updateProjectionMatrix();camera.lookAt(controls.target);setMode('orbit');syncLook();controls.update();}
     else{yaw=c[4];pitch=c[5];camera.fov=c[6]||baseFov();camera.updateProjectionMatrix();setMode('eye');applyLook();}}
- }finally{STATE_APPLYING=false;} OBS=null; if(SEL)checkItem(); poke(1500);}
+ }finally{STATE_APPLYING=false;} OBS=null; if(SEL)checkItem();}
 function setState(st){const o={sg:{},sw:{},m:st.m,it:st.it,c:st.c};
   (st.sg||[]).forEach((v,i)=>{if(v&&SGL[i])o.sg[SGL[i]]=v;}); (st.sw||'').split('').forEach((v,i)=>{if(SWL[i])o.sw[SWL[i]]=v;});
   applyPartial(o);}
 function shareURL(){return PAGES_URL+'#s='+enc(getState());}
 // on the GitHub page, the address bar always holds the current view, so a reload (or a copied address) comes back to it
 let hashT=0;
-function stateChanged(){if(!ON_PAGES)return;clearTimeout(hashT);hashT=setTimeout(()=>{try{history.replaceState(null,'','#s='+enc(getState()));}catch(_){}},900);}
+function stateChanged(){if(!ON_PAGES)return;clearTimeout(hashT);hashT=setTimeout(()=>{if(anim||glide)return stateChanged();try{history.replaceState(null,'','#s='+enc(getState()));}catch(_){}},900);}
+['pointerup','wheel','click','keyup'].forEach(t=>addEventListener(t,()=>stateChanged(),{passive:true}));
 function fromHash(){const h=location.hash.match(/[#&]s=([\w-]+)/);if(!h)return;try{setState(dec(h[1]));}catch(e){console.warn('bad view link',e);}}
 fromHash(); addEventListener('hashchange',fromHash);
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(_){}
   try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(_){return false;}}
 document.getElementById('shareBtn').addEventListener('click',async()=>{const url=shareURL();
-  if(navigator.share&&COARSE){try{await navigator.share({title:'Rear patio',text:'Our patio plan, this exact view:',url});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  if(navigator.share&&TOUCH){try{await navigator.share({title:'Rear patio',text:'Our patio plan, this exact view:',url});return;}catch(e){if(e&&e.name==='AbortError')return;}}
   if(await copyText(url))toast('Link copied. It opens to exactly this view.');else window.prompt('Copy this link:',url);});
 // inside the claude.ai viewer, files go through its downloads capability; everywhere else a normal download link works
 let DLS=null; try{if(window.claude&&typeof window.claude.use==='function')window.claude.use('downloads').then(d=>{DLS=d;},()=>{});}catch(_){}
-document.getElementById('photoBtn').addEventListener('click',()=>{skyDome.position.copy(camera.position);renderer.render(scene,camera);
+document.getElementById('photoBtn').addEventListener('click',()=>{renderer.render(scene,camera);
   renderer.domElement.toBlob(b=>{if(!b){toast('Couldn’t save the picture here');return;}const fn='patio-'+new Date().toISOString().slice(0,10)+'.jpg';
     if(DLS){DLS.save({filename:fn,data:b}).then(()=>toast('Photo saved'),e=>{if(e&&e.code!=='declined')toast('Couldn’t save the picture here');});return;}   // inside claude.ai
     const u=URL.createObjectURL(b),a=document.createElement('a');
     a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Photo saved');},'image/jpeg',.92);});
-// ---- one-tap scenes
-const SCENES={
-  everyday:{sw:{'t-furn':1,'t-fire':0,'t-hbar':0,'t-p2bed':0,'t-p2pw':0,'t-p2rock':0},sg:{cook:'none',umb:'open',lights:'auto',season:'summer',seat:'ls',dims:'off'},m:900,view:'aerial',
-    msg:'Everyday: the Phase 1 patio on a summer afternoon'},
-  party:{sw:{'t-furn':1,'t-fire':1,'t-hbar':1,'t-p2bed':1,'t-p2pw':1,'t-p2rock':1},sg:{cook:'grill',umb:'open',lights:'auto',season:'summer',seat:'ls',dims:'off'},m:1255,view:'aerial',
-    msg:'Hosting a party: bar out, grill out, fire lit, summer dusk'},
-  phase2:{sw:{'t-furn':1,'t-fire':0,'t-hbar':0,'t-p2bed':1,'t-p2pw':1,'t-p2rock':1},sg:{age:'old',cook:'none',umb:'open',lights:'auto',season:'summer',dims:'off'},m:1020,view:'aerial',
-    msg:'Phase 2 done: trees ~10 years in, privacy wall and TV up'},
-  fall:{sw:{'t-furn':1,'t-fire':1,'t-hbar':0},sg:{season:'fall',lights:'auto',umb:'closed',cook:'none',seat:'ls',dims:'off'},m:1180,view:'gazebo',
-    msg:'Fall evening: just after sunset in late September, fire on'}};
-$$('[data-scene]').forEach(b=>b.addEventListener('click',()=>{const sc=SCENES[b.dataset.scene];if(SEL)select(null);setPlay(false);
-  applyPartial(sc);go(sc.view);toast(sc.msg);stateChanged();}));
-window.__state=()=>getState(); window.__setState=s=>setState(s); window.__scene_=k=>document.querySelector(`[data-scene="${k}"]`).click();
+window.__state=()=>getState(); window.__setState=s=>setState(s);
 
 window.__go=go; window.__camPos=()=>[camera.position.toArray(),yaw,pitch,mode,camera.fov];
 window.__cam=(p,t,m,s,pw)=>{if(s){season=s;press('[data-season]',document.querySelector(`[data-season=${s}]`));}if(m!=null){mins=m;clockEl.value=m;}applySun();if(pw!=null)window.__pw(!!pw);if(p){camera.position.set(...p);controls.target.set(...t);camera.lookAt(...t);setMode('eye');syncLook();}};
 window.__sun=(s,m)=>{const q=SEASON[s];return sunPos(q.doy,m,q.tz);};
-// test hooks change things without any input event, so each one also asks for fresh frames
-Object.keys(window).filter(k=>/^__/.test(k)&&typeof window[k]==='function'&&k!=='__scene').forEach(k=>{const f=window[k];window[k]=(...a)=>{const r=f(...a);poke(2500);return r;};});
 
 })();
 </script>
