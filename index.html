@@ -593,6 +593,7 @@ const GZ_N0=scene.children.length;
   geo.computeVertexNormals(); if(geo.attributes.normal.getY(0)<0){for(let i=0;i<pos.length;i+=9){for(let q=0;q<3;q++){const t=pos[i+3+q];pos[i+3+q]=pos[i+6+q];pos[i+6+q]=t;}
      const j=i/9*6;for(let q=0;q<2;q++){const t=uv[j+2+q];uv[j+2+q]=uv[j+4+q];uv[j+4+q]=t;}}
    geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.computeVertexNormals();}
+  top.shadowSide=T.DoubleSide;   // a single-sided sheet otherwise drops out of the shadow pass and only the rafters cast shadows
   const roof=new T.Mesh(geo,top);roof.castShadow=true;roof.receiveShadow=true;scene.add(roof);
   const ceil=new T.Mesh(geo,under);ceil.receiveShadow=true;scene.add(ceil);
   const cap=new T.MeshStandardMaterial({color:0x2a1e17,roughness:.6,metalness:.2}), raf=M.cedar;
