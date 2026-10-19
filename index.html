@@ -388,7 +388,57 @@ M.copZ=mat(blockTex('endc',23.625,14,4,1,{stack:true,sppi:5,joint:'rgba(20,20,20
 // Unilock Holland Premier, Dark Charcoal: 3-7/8" x 7-7/8", one soldier course (long side across the border), joints lined up
 M.borderX=mat(blockTex('bhdc',3.875,7.875,16,1,{sppi:8,stack:true}));
 M.borderZ=mat(blockTex('bhdc',3.875,7.875,16,1,{sppi:8,stack:true,rotate:true}));
-M.field=mat(tex('gf',4.5));
+// Patio field: Unilock Beacon Hill Smooth, Granite Fusion, 3-piece random bundle on its 7-1/2" module:
+// 15" x 22-1/2" large rectangles, 15" x 15" squares, 7-1/2" x 15" small rectangles (per bundle layer 2 : 3 : 3, so about
+// 40% / 40% / 20% of the area). Laid like the random pattern sheets: no four-way joint intersections and no straight joint
+// running more than 45" (6 modules), starting full pieces off the border at the house and the east side, cuts at the far edges.
+// One texture covers the whole patio (no repeating tile), drawn from patches of the Granite Fusion photo, one patch per piece.
+const BH={mod:7.5/12, WX:35, WZ:19};
+function beaconHill(zOrigin){const P=6, W=BH.WX*12*P, H=BH.WZ*12*P, c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');g.fillStyle='#8a8884';g.fillRect(0,0,W,H);
+  const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;t.anisotropy=8;t.flipY=false;t.wrapS=t.wrapT=T.ClampToEdgeWrapping;t.repeat.set(1/BH.WX,1/BH.WZ);
+  // layout on the module grid
+  const x0=WALL+B, z0=zOrigin, C=Math.ceil((BH.WX-x0)/BH.mod)+1, R=Math.ceil((BH.WZ-z0)/BH.mod)+1, cell=new Int32Array(R*C).fill(-1);
+  const at=(r,c)=>(r<0||c<0||r>=R||c>=C)?-2:cell[r*C+c];
+  const TYPES=[{k:'L',w:2,h:3,a:6},{k:'L',w:3,h:2,a:6},{k:'S',w:2,h:2,a:4},{k:'s',w:1,h:2,a:2},{k:'s',w:2,h:1,a:2}];
+  const target={L:.4,S:.4,s:.2}, used={L:0,S:0,s:0}; let tot=0; const pieces=[];
+  let seed=20251; const rnd=()=>(seed=(seed*48271)%2147483647)/2147483647;
+  const fits=(r,c,w,h)=>{for(let i=0;i<h;i++)for(let j=0;j<w;j++){const v=at(r+i,c+j);if(v>=0)return false;if(v===-2&&(r+i)<R&&(c+j)<C)return false;}return true;};
+  const crossTL=(r,c)=>{const a=at(r-1,c-1),b=at(r-1,c),d=at(r,c-1);return a>=0&&b>=0&&d>=0&&a!==b&&a!==d&&b!==d;};
+  const runH=(r,c)=>{let n=0;for(let k=c-1;k>=0;k--){const u=at(r-1,k),v=at(r,k);if(u>=0&&v>=0&&u!==v)n++;else break;}return n;};
+  const runV=(r,c)=>{let n=0;for(let k=r-1;k>=0;k--){const u=at(k,c-1),v=at(k,c);if(u>=0&&v>=0&&u!==v)n++;else break;}return n;};
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){if(at(r,c)!==-1)continue;
+    let cand=TYPES.filter(T_=>fits(r,c,T_.w,T_.h));
+    const ok=(T_,strict)=>!crossTL(r,c)&&(!strict||((r===0||runH(r,c)+T_.w<=6)&&(c===0||runV(r,c)+T_.h<=6)));
+    let pool=cand.filter(T_=>ok(T_,true)); if(!pool.length)pool=cand.filter(T_=>ok(T_,false)); if(!pool.length)pool=cand;
+    let pick;
+    if(pool.length){const wt=pool.map(T_=>{const share=tot?used[T_.k]/tot:0;return Math.max(.05,target[T_.k]-share+.15)*(T_.k==='s'?.6:1);});
+      let x=rnd()*wt.reduce((a,b)=>a+b,0);pick=pool[pool.length-1];for(let i=0;i<pool.length;i++){if((x-=wt[i])<=0){pick=pool[i];break;}}}
+    else pick={k:'s',w:1,h:1,a:1};                                   // a leftover single module: a cut half piece
+    const id=pieces.length;pieces.push({r,c,w:pick.w,h:pick.h});
+    for(let i=0;i<pick.h;i++)for(let j=0;j<pick.w;j++)if(r+i<R&&c+j<C)cell[(r+i)*C+c+j]=id;
+    used[pick.k]+=pick.a;tot+=pick.a;}
+  BH.stats={pieces:pieces.length,share:{L:+(used.L/tot).toFixed(2),S:+(used.S/tot).toFixed(2),s:+(used.s/tot).toFixed(2)}};
+  // draw: each piece gets its own patch of the photo (clean regions only, away from the photo's joints) and a slight tone shift
+  const img=new Image();img.onload=()=>{const k=img.width/512;   // photo pieces: ~13.7 px per inch at 512 px
+    const REG=[[207,2,206,198],[207,205,206,305],[2,99,199,206],[2,310,93,200],[100,310,101,200],[418,99,92,206]].map(a=>a.map(v=>v*k));
+    const ppi=P*12/12, pin=13.7*k;
+    pieces.forEach(pc=>{const px=(x0*12+pc.c*7.5)*P, py=(z0*12+pc.r*7.5)*P, pw=pc.w*7.5*P, ph=pc.h*7.5*P;
+      const wantW=pc.w*7.5*pin, wantH=pc.h*7.5*pin;
+      let rg=REG.filter(R_=>R_[2]>=wantW*.6&&R_[3]>=wantH*.6), rot=false;
+      if(!rg.length){rg=REG.filter(R_=>R_[2]>=wantH*.6&&R_[3]>=wantW*.6);rot=true;}
+      if(!rg.length){rg=[REG[1]];}
+      const R_=rg[(rnd()*rg.length)|0], cw=Math.min(R_[2],rot?wantH:wantW), ch=Math.min(R_[3],rot?wantW:wantH);
+      const sx=R_[0]+rnd()*(R_[2]-cw), sy=R_[1]+rnd()*(R_[3]-ch);
+      g.save();g.beginPath();g.rect(px,py,pw,ph);g.clip();
+      if(rot){g.translate(px+pw/2,py+ph/2);g.rotate(Math.PI/2);g.drawImage(img,sx,sy,cw,ch,-ph/2,-pw/2,ph,pw);}
+      else g.drawImage(img,sx,sy,cw,ch,px,py,pw,ph);
+      g.restore();const tone=rnd();g.fillStyle=tone<.5?`rgba(255,255,255,${tone*.1})`:`rgba(0,0,0,${(tone-.5)*.14})`;g.fillRect(px,py,pw,ph);
+      g.strokeStyle='rgba(28,28,28,.85)';g.lineWidth=1.5;g.strokeRect(px+.5,py+.5,pw-1,ph-1);});
+    t.needsUpdate=true;};
+  img.src=TEX.gf;return t;}
+M.field=new T.MeshStandardMaterial({roughness:.9});   // map set once the border width is known (below)
+function fieldFor(toH){const old=M.field.map;M.field.map=beaconHill(toH?B:Z0+B);M.field.needsUpdate=true;if(old)old.dispose();}
 const COPZ=[M.copX,M.copX,M.copZ,M.copZ,M.copX,M.copX];
 let SOFA_X=0, LS_SEAT=null, SEC_SET=null; const SWV=[], DINE=[];
 
@@ -448,6 +498,7 @@ const rockEdges=new T.Group(); scene.add(rockEdges);    // only with the 2' rock
 
 // patio surface: Granite Fusion field with one soldier course of Holland Premier Dark Charcoal (7-7/8" wide) on all four sides
 const B=7.875/12, iz1=Z1-WALL;
+fieldFor(false);
 box(WALL,PW-WALL,-0.6,0,Z0,iz1,M.field,{cast:false});
 box(WALL,PW-WALL,-0.6,0.02,iz1-B,iz1,M.borderX,{cast:false,uo:WALL,vo:iz1-B});
 const houseBorder=box(WALL,PW-WALL,-0.6,0.02,Z0,Z0+B,M.borderX,{cast:false,uo:WALL,vo:Z0});   // along the river-rock strip
@@ -952,7 +1003,7 @@ window.__riser=k=>{setRiser(k);press('[data-riser]',document.querySelector(`[dat
 const accSwitch=sw('t-accent',on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;});
 window.__accent=on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;accSwitch.setAttribute('aria-checked',on);};
 let toHouse=false;
-function setHouseEdge(m){toHouse=m==='pavers';if(typeof dimsMode!=='undefined'&&dimsMode==='grid')buildGrid(toHouse?0:Z0);pavHouse.visible=toHouse;houseBorder.visible=!toHouse;rockStrip.visible=!toHouse;rockEnds.visible=false;rockEdges.visible=!toHouse;rockVis();if(typeof applyP2==='function'&&typeof P2!=='undefined')applyP2();}
+function setHouseEdge(m){const was=toHouse;toHouse=m==='pavers';if(was!==toHouse)fieldFor(toHouse);if(typeof dimsMode!=='undefined'&&dimsMode==='grid')buildGrid(toHouse?0:Z0);pavHouse.visible=toHouse;houseBorder.visible=!toHouse;rockStrip.visible=!toHouse;rockEnds.visible=false;rockEdges.visible=!toHouse;rockVis();if(typeof applyP2==='function'&&typeof P2!=='undefined')applyP2();}
 $$('[data-edge]').forEach(b=>b.addEventListener('click',()=>{setHouseEdge(b.dataset.edge);press('[data-edge]',b);}));
 window.__edge=m=>{setHouseEdge(m);press('[data-edge]',document.querySelector(`[data-edge="${m}"]`));};
 // phase 2 = arborvitae bed + trees, privacy wall + TV, river-rock plants + path lights, all on one switch
