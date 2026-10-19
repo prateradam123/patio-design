@@ -1600,9 +1600,13 @@ async function copyText(t){try{await navigator.clipboard.writeText(t);return tru
 document.getElementById('shareBtn').addEventListener('click',async()=>{const url=shareURL();
   if(navigator.share&&COARSE){try{await navigator.share({title:'Rear patio',text:'Our patio plan, this exact view:',url});return;}catch(e){if(e&&e.name==='AbortError')return;}}
   if(await copyText(url))toast('Link copied. It opens to exactly this view.');else window.prompt('Copy this link:',url);});
+// inside the claude.ai viewer, files go through its downloads capability; everywhere else a normal download link works
+let DLS=null; try{if(window.claude&&typeof window.claude.use==='function')window.claude.use('downloads').then(d=>{DLS=d;},()=>{});}catch(_){}
 document.getElementById('photoBtn').addEventListener('click',()=>{skyDome.position.copy(camera.position);renderer.render(scene,camera);
-  renderer.domElement.toBlob(b=>{if(!b){toast('Couldn’t save the picture here');return;}const u=URL.createObjectURL(b),a=document.createElement('a');
-    a.href=u;a.download='patio-'+new Date().toISOString().slice(0,10)+'.jpg';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Photo saved');},'image/jpeg',.92);});
+  renderer.domElement.toBlob(b=>{if(!b){toast('Couldn’t save the picture here');return;}const fn='patio-'+new Date().toISOString().slice(0,10)+'.jpg';
+    if(DLS){DLS.save({filename:fn,data:b}).then(()=>toast('Photo saved'),e=>{if(e&&e.code!=='declined')toast('Couldn’t save the picture here');});return;}   // inside claude.ai
+    const u=URL.createObjectURL(b),a=document.createElement('a');
+    a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Photo saved');},'image/jpeg',.92);});
 // ---- one-tap scenes
 const SCENES={
   everyday:{sw:{'t-furn':1,'t-fire':0,'t-hbar':0,'t-p2bed':0,'t-p2pw':0,'t-p2rock':0},sg:{cook:'none',umb:'open',lights:'auto',season:'summer',seat:'ls',dims:'off'},m:900,view:'aerial',
