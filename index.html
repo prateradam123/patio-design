@@ -201,7 +201,7 @@ body.closed .openbtn{display:flex}
       <button data-riser="xlcc">XL Smooth Charcoal</button>
     </div>
     <div class="row"><label for="t-accent">Charcoal accent course</label><button class="sw" id="t-accent" role="switch" aria-checked="true"></button></div>
-    <div class="row"><label for="t-rug">Gazebo border</label><button class="sw" id="t-rug" role="switch" aria-checked="true"></button></div>
+    <div class="row"><label for="t-rug">Gazebo border</label><button class="sw" id="t-rug" role="switch" aria-checked="false"></button></div>
     <div class="row"><label for="t-furn">Furniture</label><button class="sw" id="t-furn" role="switch" aria-checked="true"></button></div>
     <div class="row"><label>Cooking</label></div>
     <div class="seg" role="group" aria-label="Cooking">
@@ -572,7 +572,7 @@ const GX=[GXo[0]+PO/2,GXo[1]-PO/2], GZ=[GZo[0]+PO/2,GZo[1]-PO/2], GH=86.5/12, RO
 // optional gazebo border: one soldier course of the same Holland Premier squaring off the gazebo. On the west and yard
 // sides the perimeter border already does it (about 4" outside the posts there), so just two runs are added on the
 // east and house sides, the same 4" outside the posts. One course all the way around, no doubled band, no slivers.
-const gzRug=new T.Group(); scene.add(gzRug);
+const gzRug=new T.Group(); gzRug.visible=false; scene.add(gzRug);   // off by default
 (function(){const P={cast:false,parent:gzRug}, wb=PW-WALL-B, nb=iz1-B, o=wb-GXo[1];
  const x0=GXo[0]-o-B, z0=GZo[0]-o-B;
  box(x0,wb,-0.6,0.02,z0,z0+B,M.borderX,{...P,uo:x0,vo:z0});                    // house side
