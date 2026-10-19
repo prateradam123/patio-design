@@ -505,12 +505,43 @@ const NR=5, RISE=-grade(Z1+4)/NR;
  for(let i=1;i<NR;i++){const top=-RISE*i, z0=Z1+(i-1), z1=Z1+i;
    box(ST0,ST1,-5,top-COP,z0,z1,M.riser,{uo:ru,vo:top-COP}); tread(top,z0,z1);}})();
 
+// 45-degree herringbone of Unilock Holland Premier (3-7/8" x 7-7/8"), Granite Fusion, drawn to fit one panel exactly
+// (w x d inches); chevrons point toward the door. Each paver gets its own patch of the field-paver photo plus a slight tint.
+function herringbone(w,d){const P=10,W=3.94,L=7.88,c=document.createElement('canvas');c.width=Math.round(w*P);c.height=Math.round(d*P);
+  const g=c.getContext('2d');g.fillStyle='#8d8b86';g.fillRect(0,0,c.width,c.height);
+  const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;t.anisotropy=8;t.repeat.set(12/w,12/d);
+  const img=new Image();img.onload=()=>{const r2=Math.SQRT1_2,X=(u,v)=>((u-v)*r2+w/2)*P,Y=(u,v)=>((u+v)*r2)*P;
+    // pick photo patches that don't cross a joint of the big field pavers in the photo
+    const sc=document.createElement('canvas');sc.width=img.width;sc.height=img.height;const sg=sc.getContext('2d');sg.drawImage(img,0,0);
+    const D=sg.getImageData(0,0,sc.width,sc.height).data,lum=(x,y)=>{const i=(y*sc.width+x)*4;return D[i]*.3+D[i+1]*.59+D[i+2]*.11;};
+    const SW=64;const patch=()=>{let best=null;for(let k=0;k<16;k++){const x=Math.random()*(sc.width-SW)|0,y=Math.random()*(sc.height-SW)|0;let worst=1e9,tot=0,n=0;
+        for(let yy=0;yy<SW;yy+=4){let s=0,m=0;for(let xx=0;xx<SW;xx+=4){s+=lum(x+xx,y+yy);m++;}const v=s/m;tot+=v;n++;worst=Math.min(worst,v);}
+        for(let xx=0;xx<SW;xx+=4){let s=0,m=0;for(let yy=0;yy<SW;yy+=4){s+=lum(x+xx,y+yy);m++;}worst=Math.min(worst,s/m);}
+        const sco=worst-tot/n;if(!best||sco>best[0])best=[sco,x,y];}return best;};
+    const brick=(u0,u1,v0,v1)=>{const pts=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]].map(([u,v])=>[X(u,v),Y(u,v)]);
+      const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);if(Math.max(...xs)<0||Math.min(...xs)>c.width||Math.max(...ys)<0||Math.min(...ys)>c.height)return;
+      g.save();g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.clip();
+      const pk=patch(),sw=SW,sx=pk[1],sy=pk[2];
+      g.drawImage(sc,sx,sy,sw,sw,Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys));
+      const k=Math.random();g.fillStyle=k<.5?`rgba(255,255,255,${k*.08})`:`rgba(0,0,0,${(k-.5)*.12})`;g.fill();
+      g.restore();g.strokeStyle='rgba(30,30,30,.85)';g.lineWidth=1.3;g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.stroke();};
+    for(let b=-40;b<=40;b++)for(let n=-40;n<=40;n++){const su=n*W+b*L,sv=n*W-b*L;
+      brick(su,su+L,sv,sv+W); brick(su,su+W,sv+W,sv+W+L);}
+    t.needsUpdate=true;};
+  img.src=TEX.gf;return new T.MeshStandardMaterial({map:t,roughness:.9});}
 // door steps across the full 10' bay: 30" landing, then two 11" treads (4 risers of 7-3/4")
 (function(){const r=SILL/4, lv=[[Z0,Z0+2.5,SILL-r],[Z0+2.5,Z0+2.5+11/12,SILL-2*r],[Z0+2.5+11/12,Z0+2.5+22/12,SILL-3*r]];
  // 10' wide: a joint on the centre line leaves even 12-3/4" cuts at each end (a centred unit would leave 1" slivers);
- // the 11" treads are one piece deep, the 30" landing is laid in rows from its front edge
- lv.forEach(([z0,z1,top])=>{box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{uo:BAYC-15.75/24,vo:top-COP});
-   box(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:BAYC,vo:(z1-z0)>1.2?z1+.06:z0-.04});});})();
+ // the 11" treads are one piece deep. The 30" landing is framed in the same coping (a full-width nosing course across the
+ // front, a piece turned front-to-back at each end) around a 45-degree herringbone of Holland Premier in Granite Fusion.
+ lv.forEach(([z0,z1,top],k)=>{box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{uo:BAYC-15.75/24,vo:top-COP});
+   if(k>0){box(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:BAYC,vo:z0-.04});return;}
+   const CD=14/12, x0=BAY0-.03, x1=BAY1+.03, zf=z1+.06-CD;
+   box(x0,x1,top-COP,top,zf,z1+.06,M.copX,{uo:BAYC,vo:zf-.02});                       // nosing course
+   box(x0,x0+CD,top-COP,top,z0,zf,COPZ,{uo:x0,vo:zf});                                 // end pieces, turned
+   box(x1-CD,x1,top-COP,top,z0,zf,COPZ,{uo:x1-CD,vo:zf});
+   const iw=(x1-x0-2*CD)*12, id=(zf-z0)*12;
+   box(x0+CD,x1-CD,top-COP,top-.002,z0,zf,herringbone(iw,id),{uo:x0+CD,vo:z0});});})();
 
 // Yardistry Meridian 12x12 (YM11769): posts 12" off the west and front seat walls.
 // Yardistry lists the base at 11'-6" outside / 9'-10 1/2" inside, i.e. 10" post bases on 10'-8 1/2" centres
