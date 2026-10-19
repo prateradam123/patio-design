@@ -448,22 +448,36 @@ box(PW-WALL-B,PW-WALL,-0.6,0.02,Z0+B,iz1-B,M.borderZ,{cast:false,uo:PW-WALL-B,vo
 // walls: Pisa XL below the seat courses (switchable color), Pisa Edge Granite seat walls, Endura coping
 const retain=[];
 function retainRun(x0,x1,z0,z1,top=BASE){retain.push(box(x0,x1,-7,top,z0,z1,M.xlGranite,{vo:BASE}));}
-function seatRun(x0,x1,z0,z1){box(x0+0.01,x1-0.01,BASE,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE});
-  const alongX=(x1-x0)>(z1-z0), ox=alongX?0:(COPD-WALL)/2, oz=alongX?(COPD-WALL)/2:0;
-  box(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,alongX?M.copX:COPZ,{uo:x0-ox,vo:z0-oz});}
+// coping is laid from the outside corners: the side-wall run carries a full unit around the corner (out to the front
+// overhang), the front run butts into it, and the joints count off in 24" units from that corner so any cut piece lands
+// at the stair pier or the walkout end, not at the corner. c = {s:extend start, e:extend end, from:'start'|'end'}
+function seatRun(x0,x1,z0,z1,c={}){box(x0+0.01,x1-0.01,BASE,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE});
+  const alongX=(x1-x0)>(z1-z0), ov=(COPD-WALL)/2, ox=alongX?0:ov, oz=alongX?ov:0, s0=c.s||0, s1=c.e||0;
+  const a0=(alongX?x0:z0)-s0, a1=(alongX?x1:z1)+s1, org=c.from==='end'?a1:a0;
+  if(alongX)box(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz});
+  else box(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org});}
 // side walls: retaining the full length; seat walls stop 3' short of the rock strip for the walkouts
 retainRun(0,WALL,Z0,Z1); retainRun(PW-WALL,PW,Z0,Z1);
-seatRun(0,WALL,5,Z1); seatRun(PW-WALL,PW,5,Z1);
+seatRun(0,WALL,5,Z1,{e:(COPD-WALL)/2,from:'end'}); seatRun(PW-WALL,PW,5,Z1,{e:(COPD-WALL)/2,from:'end'});
 [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>box(a-.08,b+.08,BASE,BASE+COP,Z0,5,COPZ,{uo:a,vo:Z0}));
 // cap-stone steps out each walkout (one riser down to the side yard)
 [[-1.17,0],[PW,PW+1.17]].forEach(([a,b])=>{box(a,b,-3,-0.68,Z0,5,M.riser,{vo:-0.68});box(a-.04,b+.04,-0.68,-0.68+COP,Z0,5,COPZ,{uo:a,vo:Z0});});
 // front wall: 12'-0" + 2' pier + 5' stair + 2' pier + 14'-0"
 retainRun(WALL,ST0-2,Z1-WALL,Z1); retainRun(ST1+2,PW-WALL,Z1-WALL,Z1);
-seatRun(WALL,ST0-2,Z1-WALL,Z1); seatRun(ST1+2,PW-WALL,Z1-WALL,Z1);
+seatRun(WALL,ST0-2,Z1-WALL,Z1,{s:-(COPD-WALL)/2,from:'start'}); seatRun(ST1+2,PW-WALL,Z1-WALL,Z1,{e:-(COPD-WALL)/2,from:'end'});
 // 2'x2' piers, projecting 6" past both wall faces: 4 Pisa courses + cap = 24" above the patio
-const PIERTOP=BASE+4*XLC;
+const PIERTOP=BASE+4*XLC, PCAP=3.875/12, PCAPW=29.125/12;
+// Unilock Ledgestone pillar cap (29-1/8" x 29-1/8" x 3-7/8"), one piece, dark, with the pitched edges Ledgestone is cast with
+M.ledge=new T.MeshStandardMaterial({map:tex('endc',1.6),color:0xb4b4b4,roughness:.95});
+function pillarCap(cx,cz){const h=PCAPW/2, sh=new T.Shape();sh.moveTo(-h+.06,-h+.06);sh.lineTo(h-.06,-h+.06);sh.lineTo(h-.06,h-.06);sh.lineTo(-h+.06,h-.06);
+  const g=new T.ExtrudeGeometry(sh,{depth:PCAP-.07,bevelEnabled:true,bevelThickness:.035,bevelSize:.06,bevelSegments:2,curveSegments:1});
+  g.rotateX(-Math.PI/2);g.translate(cx,PIERTOP+.035,cz);
+  const p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;   // world-scaled UVs like box()
+  g.computeVertexNormals();for(let i=0;i<p.count;i++){const ny=Math.abs(n.getY(i)),nx=Math.abs(n.getX(i));
+    if(ny>.7)uv.setXY(i,p.getX(i),p.getZ(i));else if(nx>.5)uv.setXY(i,p.getZ(i),p.getY(i));else uv.setXY(i,p.getX(i),p.getY(i));}
+  const m=new T.Mesh(g,M.ledge);m.castShadow=m.receiveShadow=true;scene.add(m);return m;}
 [[ST0-2,ST0],[ST1,ST1+2]].forEach(([a,b])=>{retain.push(box(a,b,-7,PIERTOP,Z1-1.5,Z1+.5,M.xlGranite,{vo:BASE}));
-  box(a-.17,b+.17,PIERTOP,PIERTOP+COP,Z1-1.67,Z1+.67,M.copX,{uo:a-.17});});
+  pillarCap((a+b)/2,Z1-.5);});
 // optional accent: the top retaining course (the one at patio level, right under the seat wall) in Charcoal Pisa XL Smooth.
 // Same unit and setback as the Granite courses, so the joints line up; it wraps the stair piers at the same course.
 const accent=new T.Group(); scene.add(accent);
@@ -740,8 +754,13 @@ const umbOpen=new T.Group(), umbClosed=new T.Group(); umb.add(umbOpen,umbClosed)
  for(let i=0;i<vp.count;i++){const x=vp.getX(i),z=vp.getZ(i),s=pan(x,z),k=1-.055*s;let y=vp.getY(i);if(y<0)y+=.06*(1-Math.cos(Math.atan2(x,z)*16));vp.setXYZ(i,x*k,y,z*k);}
  vg.computeVertexNormals();const val=new T.Mesh(vg,MD.fabric);val.position.y=top-.55-.575-.2;val.castShadow=true;umbOpen.add(val);
  const vent=new T.Mesh(new T.ConeGeometry(.75,.35,8,1,true),MD.fabric);vent.position.y=top+.12;vent.castShadow=true;umbOpen.add(vent);
- for(let i=0;i<8;i++){const a=i/8*Math.PI*2+Math.PI/8;const r=new T.Mesh(new T.BoxGeometry(.04,.04,2.6),MD.frame);
-   r.position.set(Math.sin(a)*1.25,top-1.0,Math.cos(a)*1.25);r.rotation.y=a;r.rotation.x=-0.62;umbOpen.add(r);}
+ // frame: 8 ribs from the hub out along each seam just under the fabric, 8 stretchers from the runner up to mid-rib
+ const bar=(P,Q,w)=>{const m=new T.Mesh(new T.BoxGeometry(w,w,P.distanceTo(Q)),MD.frame);m.position.copy(P).add(Q).multiplyScalar(.5);m.lookAt(Q);m.castShadow=true;umbOpen.add(m);};
+ const hub=new T.Vector3(0,top-.06,0), run=new T.Vector3(0,top-1.95,0);
+ for(let i=0;i<8;i++){const a=RIB(i), tip=new T.Vector3(Math.sin(a)*4.42,top-1.16,Math.cos(a)*4.42);
+   bar(hub,tip,.045); bar(run,hub.clone().lerp(tip,.5).add(new T.Vector3(0,-.03,0)),.035);}
+ const hubC=new T.Mesh(new T.CylinderGeometry(.13,.13,.14,12),MD.frame);hubC.position.copy(hub);umbOpen.add(hubC);
+ const runC=new T.Mesh(new T.CylinderGeometry(.12,.12,.22,12),MD.frame);runC.position.copy(run);umbOpen.add(runC);
  const fold=new T.Mesh(new T.ConeGeometry(.36,4.2,8),MD.fabric);fold.rotation.x=Math.PI;fold.position.y=top-2.0;fold.castShadow=true;umbClosed.add(fold);
  const fin=new T.Mesh(new T.SphereGeometry(.1,10,8),MD.frame);fin.position.y=top+.32;umb.add(fin);
  umbClosed.visible=false;})();
@@ -759,7 +778,7 @@ window.__audit={
   'post to west seat wall':(PW-WALL)-GXo[1],'post to front seat wall':(Z1-WALL)-GZo[1],'posts out-to-out':GXo[1]-GXo[0],
   'walkway rock strip to roof edge':(GCZ-ROOF/2)-Z0,'walkway house to roof edge (pavers option)':(GCZ-ROOF/2),'path chairs to gazebo roof':(GCX-ROOF/2)-(TCX+TW/2+CHD),
   'aisle cook line to chairs':(TCX-TW/2-CHD)-(WALL+COOKD),'cook line stored':(COOK_END)-(COOK.grill.g.position.z-COOK.grill.stored/2),
-  'seat height (in)':(SEATTOP+COP)*12,'pier above patio (in)':(PIERTOP+COP)*12,'door riser (in)':SILL/4*12,
+  'seat height (in)':(SEATTOP+COP)*12,'pier above patio (in)':(PIERTOP+PCAP)*12,'door riser (in)':SILL/4*12,
   'yard riser (in)':RISE*12,'front wall showing at the corner (in)':-grade(Z1)*12,'door steps depth into patio':2.5+22/12,
   'front wall, lawn to top of cap (in)':(-grade(Z1)+SEATTOP+COP)*12,'side wall showing at house end (in)':-grade(Z0)*12,
   'patio above grade at house (in)':-grade(0)*12,'stair foot below patio (in)':-grade(Z1+4)*12,'border width (in)':B*12,
