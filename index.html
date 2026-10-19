@@ -543,6 +543,15 @@ function herringbone(w,d){const P=10,W=3.94,L=7.88,c=document.createElement('can
    const iw=(x1-x0-2*CD)*12, id=(zf-z0)*12;
    box(x0+CD,x1-CD,top-COP,top-.002,z0,zf,herringbone(iw,id),{uo:x0+CD,vo:z0});});})();
 
+// the patio border wraps the door steps: a soldier course up each side and across the front of the bottom riser,
+// so the steps sit in a dark frame like the rest of the patio edges (corners carried by the front run)
+(function(){const zF=Z0+2.5+22/12, P={cast:false}, PH={cast:false,parent:pavHouse};
+ box(BAY0-B,BAY0,-0.6,0.02,Z0+B,zF,M.borderZ,{...P,uo:BAY0-B,vo:Z0+B});
+ box(BAY1,BAY1+B,-0.6,0.02,Z0+B,zF,M.borderZ,{...P,uo:BAY1,vo:Z0+B});
+ box(BAY0-B,BAY1+B,-0.6,0.02,zF,zF+B,M.borderX,{...P,uo:BAY0-B,vo:zF});
+ // with pavers to the house the strip along the rock is gone, so the side runs continue back to the bay face
+ box(BAY0-B,BAY0,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:BAY0-B,vo:Z0});
+ box(BAY1,BAY1+B,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:BAY1,vo:Z0});})();
 // Yardistry Meridian 12x12 (YM11769): posts 12" off the west and front seat walls.
 // Yardistry lists the base at 11'-6" outside / 9'-10 1/2" inside, i.e. 10" post bases on 10'-8 1/2" centres
 // (matches their 10x12 anchor drawing, 10'-8 3/8" on the 12' side) -> 6x6 posts 11'-2" outside to outside
