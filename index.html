@@ -194,6 +194,11 @@ body.closed .openbtn{display:flex}
       <button data-edge="pavers" aria-pressed="true">Pavers to the house</button>
       <button data-edge="rock">2' river rock</button>
     </div>
+    <div class="row"><label>Door steps</label></div>
+    <div class="seg" role="group" aria-label="Door steps">
+      <button data-steps="straight" aria-pressed="true">Straight</button>
+      <button data-steps="cake">Wedding cake</button>
+    </div>
     <div class="row"><label>Stair risers</label></div>
     <div class="seg" role="group" aria-label="Stair risers">
       <button data-riser="pisa" aria-pressed="true">Pisa (rugged)</button>
@@ -440,7 +445,7 @@ function beaconHill(zOrigin){const P=6, W=BH.WX*12*P, H=BH.WZ*12*P, c=document.c
 M.field=new T.MeshStandardMaterial({roughness:.9});   // map set once the border width is known (below)
 function fieldFor(toH){const old=M.field.map;M.field.map=beaconHill(toH?B:Z0+B);M.field.needsUpdate=true;if(old)old.dispose();}
 const COPZ=[M.copX,M.copX,M.copZ,M.copZ,M.copX,M.copX];
-let SOFA_X=0, LS_SEAT=null, SEC_SET=null; const SWV=[], DINE=[];
+const BAYHUG=[]; let SOFA_X=0, LS_SEAT=null, SEC_SET=null; const SWV=[], DINE=[];
 
 // ---- layout (feet), from the latest drawings. x: along the house, EAST end at x=0 (left when you face the
 // house from the yard), WEST end at x=35. z: from the main back wall toward the yard. y: up, patio surface = 0.
@@ -547,7 +552,7 @@ const pavHouse=new T.Group(), pavHouseAcc=new T.Group(); pavHouse.visible=false;
 (function(){const P={parent:pavHouse,cast:false};
  box(WALL,BAY0,-0.6,0,0,Z0,M.field,P); box(BAY1,PW-WALL,-0.6,0,0,Z0,M.field,P);
  box(WALL,BAY0,-0.6,0.02,0,B,M.borderX,{...P,uo:WALL,vo:0}); box(BAY1,PW-WALL,-0.6,0.02,0,B,M.borderX,{...P,uo:BAY1,vo:0});   // along the house
- box(BAY0-B,BAY0,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY0-B,vo:B}); box(BAY1,BAY1+B,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY1,vo:B});  // hugging the bay sides
+ BAYHUG.push(box(BAY0-B,BAY0,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY0-B,vo:B}),box(BAY1,BAY1+B,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY1,vo:B}));  // hugging the bay sides
  box(WALL,WALL+B,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:WALL,vo:B}); box(PW-WALL-B,PW-WALL,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:PW-WALL-B,vo:B});
  [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>{box(a,b,-7,BASE,0,Z0,M.xlGranite,{parent:pavHouse,vo:BASE});
    box(a-.006,b+.006,BASE-XLC,BASE,-.006,Z0,M.xlCharcoal,{vo:BASE,parent:pavHouseAcc,cast:false});
@@ -589,29 +594,46 @@ function herringbone(w,d){const P=10,W=3.94,L=7.88,c=document.createElement('can
       brick(su,su+L,sv,sv+W); brick(su,su+W,sv+W,sv+W+L);}
     t.needsUpdate=true;};
   img.src=TEX.gf;return new T.MeshStandardMaterial({map:t,roughness:.9});}
-// door steps across the full 10' bay: 30" landing, then two 11" treads (4 risers of 7-3/4")
-(function(){const r=SILL/4, lv=[[Z0,Z0+2.5,SILL-r],[Z0+2.5,Z0+2.5+11/12,SILL-2*r],[Z0+2.5+11/12,Z0+2.5+22/12,SILL-3*r]];
+// door steps across the full 10' bay: 30" landing, then two 11" treads (4 risers of 7-3/4"), in two styles:
+//  straight     - the treads run the 10' width of the bay, sides closed by the patio border
+//  wedding cake - each tread below the landing wraps around both sides as well as the front, so the steps can be
+//                 walked down three ways; each tier grows 11" on each side (bottom tier 13'-8" wide)
+const stepsS=new T.Group(), stepsW=new T.Group(); scene.add(stepsS,stepsW); stepsW.visible=false;
+const phS=new T.Group(), phW=new T.Group(); pavHouse.add(phS,phW); phW.visible=false;
+(function(){const r=SILL/4, TD=11/12, lv=[[Z0,Z0+2.5,SILL-r],[Z0+2.5,Z0+2.5+TD,SILL-2*r],[Z0+2.5+TD,Z0+2.5+2*TD,SILL-3*r]];
  // 10' wide: a joint on the centre line leaves even 12-3/4" cuts at each end (a centred unit would leave 1" slivers);
  // the 11" treads are one piece deep. The 30" landing is framed in the same coping (a full-width nosing course across the
  // front, a piece turned front-to-back at each end) around a 45-degree herringbone of Holland Premier in Granite Fusion.
- lv.forEach(([z0,z1,top],k)=>{box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{uo:BAYC-15.75/24,vo:top-COP});
-   if(k>0){box(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:BAYC,vo:z0-.04});return;}
+ {const [z0,z1,top]=lv[0];box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{uo:BAYC-15.75/24,vo:top-COP});
    const CD=14/12, x0=BAY0-.03, x1=BAY1+.03, zf=z1+.06-CD;
    box(x0,x1,top-COP,top,zf,z1+.06,M.copX,{uo:BAYC,vo:zf-.02});                       // nosing course
    box(x0,x0+CD,top-COP,top,z0,zf,COPZ,{uo:x0,vo:zf});                                 // end pieces, turned
    box(x1-CD,x1,top-COP,top,z0,zf,COPZ,{uo:x1-CD,vo:zf});
    const iw=(x1-x0-2*CD)*12, id=(zf-z0)*12;
-   box(x0+CD,x1-CD,top-COP,top-.002,z0,zf,herringbone(iw,id),{uo:x0+CD,vo:z0});});})();
+   box(x0+CD,x1-CD,top-COP,top-.002,z0,zf,herringbone(iw,id),{uo:x0+CD,vo:z0});}
+ // straight treads
+ lv.slice(1).forEach(([z0,z1,top])=>{const P={parent:stepsS};box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{...P,uo:BAYC-15.75/24,vo:top-COP});
+   box(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:BAYC,vo:z0-.04});});
+ // wedding-cake tiers: front run carries the corners, side runs turned front-to-back and counted from the corner
+ [1,2].forEach(k=>{const top=SILL-(k+1)*r, xa=BAY0-k*TD, xb=BAY1+k*TD, zf=Z0+2.5+k*TD, zb=zf-TD, P={parent:stepsW};
+   box(xa,xb,-0.6,top-COP,Z0,zf,M.riser,{...P,uo:BAYC-15.75/24,vo:top-COP});
+   box(xa-.03,xb+.03,top-COP,top,zb,zf+.06,M.copX,{...P,uo:BAYC,vo:zb-.04});
+   box(xa-.03,xa+TD,top-COP,top,Z0,zb,COPZ,{...P,uo:xa-.03,vo:zb});
+   box(xb-TD,xb+.03,top-COP,top,Z0,zb,COPZ,{...P,uo:xb-TD,vo:zb});});})();
 
 // the patio border wraps the door steps: a soldier course up each side and across the front of the bottom riser,
 // so the steps sit in a dark frame like the rest of the patio edges (corners carried by the front run)
-(function(){const zF=Z0+2.5+22/12, P={cast:false}, PH={cast:false,parent:pavHouse};
- box(BAY0-B,BAY0,-0.6,0.02,Z0+B,zF,M.borderZ,{...P,uo:BAY0-B,vo:Z0+B});
- box(BAY1,BAY1+B,-0.6,0.02,Z0+B,zF,M.borderZ,{...P,uo:BAY1,vo:Z0+B});
- box(BAY0-B,BAY1+B,-0.6,0.02,zF,zF+B,M.borderX,{...P,uo:BAY0-B,vo:zF});
- // with pavers to the house the strip along the rock is gone, so the side runs continue back to the bay face
- box(BAY0-B,BAY0,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:BAY0-B,vo:Z0});
- box(BAY1,BAY1+B,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:BAY1,vo:Z0});})();
+(function(){const zF=Z0+2.5+22/12;
+ [[stepsS,phS,BAY0,BAY1],[stepsW,phW,BAY0-22/12,BAY1+22/12]].forEach(([G,PHG,a,b])=>{const P={cast:false,parent:G}, PH={cast:false,parent:PHG};
+   box(a-B,a,-0.6,0.02,Z0+B,zF,M.borderZ,{...P,uo:a-B,vo:Z0+B});
+   box(b,b+B,-0.6,0.02,Z0+B,zF,M.borderZ,{...P,uo:b,vo:Z0+B});
+   box(a-B,b+B,-0.6,0.02,zF,zF+B,M.borderX,{...P,uo:a-B,vo:zF});
+   // with pavers to the house the strip along the rock is gone, so the side runs continue back
+   // (straight steps: to the bay face, where the bay-hugging border takes over; wedding cake: all the way to the house border)
+   const zb=G===stepsS?Z0:B;
+   box(a-B,a,-0.6,0.02,zb,Z0+B,M.borderZ,{...PH,uo:a-B,vo:zb});
+   box(b,b+B,-0.6,0.02,zb,Z0+B,M.borderZ,{...PH,uo:b,vo:zb});});})();
+function setSteps(m){const cake=m==='cake';stepsS.visible=phS.visible=!cake;stepsW.visible=phW.visible=cake;BAYHUG.forEach(o=>o.visible=!cake);}
 // Yardistry Meridian 12x12 (YM11769): posts 12" off the west and front seat walls.
 // Yardistry lists the base at 11'-6" outside / 9'-10 1/2" inside, i.e. 10" post bases on 10'-8 1/2" centres
 // (matches their 10x12 anchor drawing, 10'-8 3/8" on the 12' side) -> 6x6 posts 11'-2" outside to outside
@@ -998,6 +1020,8 @@ $$('[data-deck]').forEach(b=>b.addEventListener('click',()=>{setDeck(b.dataset.d
 window.__cook=m=>setCook(m); window.__deck=m=>setDeck(m); window.__umb=m=>setUmb(m);
 $$('[data-umb]').forEach(b=>b.addEventListener('click',()=>{setUmb(b.dataset.umb);press('[data-umb]',b);}));
 sw('t-fire',on=>{flames.forEach(f=>f.visible=on);fireLight.visible=on;});
+$$('[data-steps]').forEach(b=>b.addEventListener('click',()=>{setSteps(b.dataset.steps);press('[data-steps]',b);}));
+window.__steps=k=>{setSteps(k);press('[data-steps]',document.querySelector(`[data-steps="${k}"]`));};
 $$('[data-riser]').forEach(b=>b.addEventListener('click',()=>{setRiser(b.dataset.riser);press('[data-riser]',b);}));
 window.__riser=k=>{setRiser(k);press('[data-riser]',document.querySelector(`[data-riser="${k}"]`));};
 const accSwitch=sw('t-accent',on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;});
@@ -1539,7 +1563,7 @@ let last=performance.now();
 // ---- share a view: everything on screen (camera, switches, time, moved furniture) rides in the link as #s=...
 const PAGES_URL='https://prateradam123.github.io/patio-design/', ON_PAGES=/github\.io$/.test(location.hostname);
 const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person'];
-const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser'];
+const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps'];
 const r2=v=>Math.round(v*100)/100;
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const dec=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
