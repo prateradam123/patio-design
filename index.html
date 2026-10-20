@@ -31,7 +31,7 @@ button{font:500 13px var(--f-body);color:var(--ink);background:transparent;borde
 button:hover{border-color:var(--muted)}
 /* iPhone Safari: quick repeat taps on a button would otherwise trigger double-tap-to-zoom (and swallow the taps the
    Easter egg counts); manipulation keeps pinch-zoom but drops double-tap zoom and the tap delay */
-html,body,button,.panel,.views,.seg{touch-action:manipulation}
+button,.views,.seg{touch-action:manipulation}
 button{-webkit-tap-highlight-color:transparent}
 button[aria-pressed="true"]{background:var(--on);color:var(--onink);border-color:var(--on)}
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -58,7 +58,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .row[aria-disabled="true"]{opacity:.45;pointer-events:none}
 .note{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:12px;margin-top:auto}
 #stage{position:relative;flex:1;min-width:0;min-height:0}
-#stage canvas{display:block;width:100%;height:100%}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
 .hint{position:absolute;left:max(12px,env(safe-area-inset-left,0px));bottom:12px;max-width:calc(100% - 220px);background:color-mix(in srgb,var(--panel) 85%,transparent);border:1px solid var(--rule);padding:6px 10px;font-size:12px;color:var(--muted)}
 .hint b{color:var(--ink);font-weight:600}
 .dims{position:absolute;inset:0;pointer-events:none;overflow:hidden}
@@ -1482,6 +1482,7 @@ const TV=(function(){const V_=window.TVV, g=V_.cv.getContext('2d'), W=640, H=360
  const el=renderer.domElement, rc=new T.Raycaster(); let dn=null;
  const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
  const onTV=e=>{const r=el.getBoundingClientRect();rc.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:-(e.clientY-r.top)/r.height*2+1},camera);
+   if(!rc.intersectObjects([window.__tvScreen,V_.mesh],false).length)return false;   // cheap check first; only a hit on the TV pays for the full-scene test
    const h=rc.intersectObjects(scene.children,true).find(h=>h.object.isMesh&&!h.object.isSprite&&vis(h.object)&&!(h.object.material&&h.object.material.transparent));
    return !!h&&(h.object===window.__tvScreen||h.object===V_.mesh);};
  addEventListener('pointerdown',e=>{dn=null;if(e.target!==el||!e.isPrimary||e.button>0||mode!=='eye'||eggOn||tapeOn)return;if(onTV(e))dn={x:e.clientX,y:e.clientY,t:performance.now()};},true);
