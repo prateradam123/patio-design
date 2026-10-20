@@ -1488,11 +1488,12 @@ const TV=(function(){const V_=window.TVV, g=V_.cv.getContext('2d'), W=640, H=360
  addEventListener('pointerdown',e=>{dn=null;if(e.target!==el||!e.isPrimary||e.button>0||mode!=='eye'||eggOn||tapeOn)return;if(onTV(e))dn={x:e.clientX,y:e.clientY,t:performance.now()};},true);
  addEventListener('pointerup',e=>{if(!dn||e.target!==el)return;const d=dn;dn=null;
    if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>8||performance.now()-d.t>500||!onTV(e))return;
-   e.stopImmediatePropagation();tapEaten=e.timeStamp;set(!on,true);
+   tapEaten=e.timeStamp;set(!on,true);   // don't stop the event: the look-around code still has to see this finger lift
    if(on&&camera.position.distanceTo(V_.pos)>16)go('gazebo');},true);
  window.__tvAt=T_=>{phase=-1;wipeT=-9;for(let t=0;t<=T_;t+=1/30)draw(t,1/30);V_.tex.needsUpdate=true;return V_.cv.toDataURL('image/png');};
  return {set,tick,get on(){return on;}};})();
 window.__tv=v=>{if(v!=null)TV.set(v,true);return TV.on;};
+window.__tvScr=()=>{const v=TVV.pos.clone();v.x-=.4;v.project(camera);const r=renderer.domElement.getBoundingClientRect();return [r.left+(v.x+1)/2*r.width,r.top+(1-v.y)/2*r.height];};
 // ---- Yardistry Moveable Hosting Bar (YM11843), built from Yardistry's dimensional drawing ----
 // 76-1/16" long x 23-3/16" deep x 42-15/16" tall. Bar top 16-1/8" deep on the guest side; the 7" prep step behind it sits 1-9/16" lower.
 // Base (legs) 73-3/4" x 20-7/8"; 2-15/16" locking casters; 39-5/8" to the underside of the top; foot rail on the guest side;
@@ -1676,7 +1677,7 @@ addEventListener('keydown',e=>{if(!SEL||(e.target.closest&&e.target.closest('inp
    if(Math.hypot(e.clientX-DRAG.sx,e.clientY-DRAG.sy)>3)DRAG.moved=true;
    ray(e);if(rc.ray.intersectPlane(pl,v))placeItem(SEL,v.x+DRAG.dx,v.z+DRAG.dz);},true);
  const end=e=>{if(DRAG&&e.pointerId===DRAG.id){e.stopPropagation();if(DRAG.moved)saveItems();DRAG=null;el.style.cursor='grab';return;}
-   if(!tap||e.target!==el)return;const t=tap;tap=null;
+   if(!tap||e.target!==el)return;const t=tap;tap=null;if(tapEaten===e.timeStamp)return;   // the TV took this tap
    if(Math.hypot(e.clientX-t.x,e.clientY-t.y)>8||performance.now()-t.t>500)return;   // that was an orbit/look drag
    if(t.it&&t.it.move){select(t.it.key);tapEaten=e.timeStamp;return;}   // a tap on a movable piece selects it instead of flying the camera there
    if(t.it)select(t.it.key);else if(SEL)select(null);};
