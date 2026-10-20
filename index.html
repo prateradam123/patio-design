@@ -29,6 +29,10 @@ h2{font:500 11px/1 var(--f-mono);letter-spacing:.09em;text-transform:uppercase;c
 .views{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 button{font:500 13px var(--f-body);color:var(--ink);background:transparent;border:1px solid var(--rule);padding:7px 10px;border-radius:4px;cursor:pointer;text-align:left}
 button:hover{border-color:var(--muted)}
+/* iPhone Safari: quick repeat taps on a button would otherwise trigger double-tap-to-zoom (and swallow the taps the
+   Easter egg counts); manipulation keeps pinch-zoom but drops double-tap zoom and the tap delay */
+html,body,button,.panel,.views,.seg{touch-action:manipulation}
+button{-webkit-tap-highlight-color:transparent}
 button[aria-pressed="true"]{background:var(--on);color:var(--onink);border-color:var(--on)}
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .seg{display:flex;background:var(--soft);border-radius:5px;padding:3px;gap:3px}
@@ -1283,7 +1287,7 @@ function dimTick(){const w=stage.clientWidth,h=stage.clientHeight,placed=[];
  phone.addEventListener('change',e=>set(e.matches));
  // on a phone, picking a view tucks the sheet away so you can see it
  let closeT=0; document.querySelector('.views').addEventListener('click',e=>{if(!e.target.closest('[data-view]')||!phone.matches)return;
-   clearTimeout(closeT);closeT=setTimeout(()=>set(true),700);});})();
+   clearTimeout(closeT);closeT=setTimeout(()=>set(true),1100);});})();
 // ---- easter egg: click any view button three times quickly to unlock "Neighbor" -- the east neighbor up on a
 // stepladder behind their privacy fence, binoculars trained on your TV and fire table
 V.neighbor={p:[-12.6,ground(27)+7.1,27.5],t:[26,2.6,11.5]};
@@ -1343,7 +1347,7 @@ function unlockNeighbor(g){unlockEgg('neighbor',g);}
 Object.keys(EGGS).forEach(k=>{try{if(localStorage.getItem('patio-'+k)==='1')unlockEgg(k,false);}catch(_){}});
 (function(){let last=null,n=0,t0=0;
  document.querySelector('.views').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b||EGGS[b.dataset.view])return;
-   const now=performance.now();if(b.dataset.view===last&&now-t0<900)n++;else{n=1;last=b.dataset.view;}t0=now;
+   const now=performance.now();if(b.dataset.view===last&&now-t0<1100)n++;else{n=1;last=b.dataset.view;}t0=now;
    if(n>=3){const egg=b.dataset.view==='west'?'upstairs':b.dataset.view==='east'?'upstairsE':'neighbor';n=0;last=null;unlockEgg(egg,true);}});})();
 // ---- Yardistry Moveable Hosting Bar (YM11843), built from Yardistry's dimensional drawing ----
 // 76-1/16" long x 23-3/16" deep x 42-15/16" tall. Bar top 16-1/8" deep on the guest side; the 7" prep step behind it sits 1-9/16" lower.
@@ -1583,6 +1587,7 @@ function getState(){const st={v:1};
   const it={};Object.values(ITEMS).forEach(i=>{if(!i.move)return;const p=i.root.position,h=i.home;
     if(Math.abs(p.x-h.x)>.01||Math.abs(p.z-h.z)>.01||Math.abs(i.root.rotation.y-h.r)>.001)it[i.key]=[r2(p.x),r2(p.z),+i.root.rotation.y.toFixed(3)];});
   if(Object.keys(it).length)st.it=it;
+  if(eggOn&&mode==='eye')st.e=eggOn;   // an Easter-egg view: the link reopens it with its window / binocular framing
   return st;}
 var STATE_APPLYING=false;
 // apply a partial state: {sw:{id:0|1}, sg:{key:value}, m, it, c}
@@ -1595,9 +1600,11 @@ function applyPartial(o){STATE_APPLYING=true;try{
   if(o.c){const c=o.c;anim=null;glide=null;if(eggOn)setEgg(null);$$('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));
     camera.position.set(c[1],c[2],c[3]);
     if(c[0]==='o'){controls.target.set(c[4],c[5],c[6]);camera.fov=50;camera.updateProjectionMatrix();camera.lookAt(controls.target);setMode('orbit');syncLook();controls.update();}
-    else{yaw=c[4];pitch=c[5];camera.fov=c[6]||baseFov();camera.updateProjectionMatrix();setMode('eye');applyLook();}}
+    else{yaw=c[4];pitch=c[5];camera.fov=c[6]||baseFov();camera.updateProjectionMatrix();setMode('eye');applyLook();
+      if(o.e&&EGGS[o.e]){unlockEgg(o.e,false);setEgg(o.e);eggClamp();camera.position.y=nbrBaseY;
+        press('[data-view]',document.querySelector(`[data-view="${o.e}"]`));}}}
  }finally{STATE_APPLYING=false;} OBS=null; if(SEL)checkItem();}
-function setState(st){const o={sg:{},sw:{},m:st.m,it:st.it,c:st.c};
+function setState(st){const o={sg:{},sw:{},m:st.m,it:st.it,c:st.c,e:st.e};
   (st.sg||[]).forEach((v,i)=>{if(v&&SGL[i])o.sg[SGL[i]]=v;}); (st.sw||'').split('').forEach((v,i)=>{if(SWL[i])o.sw[SWL[i]]=v;});
   applyPartial(o);}
 function shareURL(){return PAGES_URL+'#s='+enc(getState());}
