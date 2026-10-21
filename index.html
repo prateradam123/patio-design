@@ -523,6 +523,28 @@ box(WALL,WALL+B,-0.6,0.02,Z0+B,iz1-B,M.borderZ,{cast:false,uo:WALL,vo:Z0+B});
 box(PW-WALL-B,PW-WALL,-0.6,0.02,Z0+B,iz1-B,M.borderZ,{cast:false,uo:PW-WALL-B,vo:Z0+B});
 
 // walls: Pisa XL below the seat courses (switchable color), Pisa Edge Granite seat walls, Endura coping
+// Endura Fullnose coping: one long edge of each unit is a full half-round (radius = half the 2-3/8" thickness).
+// cop() draws a coping box with that edge rounded on `side` ('+x','-x','+z','-z'); lim=[a,b] limits the rounded
+// stretch (e.g. where a run butts into another at an inside corner the edge stays square).
+function noseRun(a0,a1,y0,y1,e,side,o){const r=(y1-y0)/2,yc=(y0+y1)/2,N=12,ax=side[1]==='z',sg=side[0]==='+'?1:-1;
+  const uOff=ax?(o.uo||0):(o.vo||0),pos=[],uv=[],idx=[];
+  const P=(a,y,out)=>{ax?pos.push(a,y,out):pos.push(out,y,a);return pos.length/3-1;};
+  const tri=(i,j,k,d)=>{const v=n=>[pos[n*3],pos[n*3+1],pos[n*3+2]],A=v(i),B=v(j),C=v(k),u=[B[0]-A[0],B[1]-A[1],B[2]-A[2]],w=[C[0]-A[0],C[1]-A[1],C[2]-A[2]];
+    const n=[u[1]*w[2]-u[2]*w[1],u[2]*w[0]-u[0]*w[2],u[0]*w[1]-u[1]*w[0]];(n[0]*d[0]+n[1]*d[1]+n[2]*d[2])>=0?idx.push(i,j,k):idx.push(i,k,j);};
+  const ring=[];for(let i=0;i<=N;i++){const t=-Math.PI/2+Math.PI*i/N,out=e+sg*r*Math.cos(t),y=yc+r*Math.sin(t);
+    ring.push([P(a0,y,out),P(a1,y,out),t]);uv.push(a0-uOff,.3+.4*i/N,a1-uOff,.3+.4*i/N);}
+  for(let i=0;i<N;i++){const [p0,p1,t0]=ring[i],[q0,q1,t1]=ring[i+1],tm=(t0+t1)/2,d=ax?[0,Math.sin(tm),sg*Math.cos(tm)]:[sg*Math.cos(tm),Math.sin(tm),0];
+    tri(p0,p1,q0,d);tri(p1,q1,q0,d);}
+  [[a0,-1],[a1,1]].forEach(([a,dir])=>{const c=P(a,yc,e);uv.push(a-uOff,.5);const d=ax?[dir,0,0]:[0,0,dir];
+    for(let i=0;i<N;i++)tri(c,ring[i][dir<0?0:1],ring[i+1][dir<0?0:1],d);});
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
+  const m=new T.Mesh(g,M.copX);m.castShadow=o.cast!==false;m.receiveShadow=true;(o.parent||scene).add(m);return m;}
+function cop(x0,x1,y0,y1,z0,z1,mat,o,side,lim){if(!side)return box(x0,x1,y0,y1,z0,z1,mat,o);
+  const ax=side[1]==='z',A0=ax?x0:z0,A1=ax?x1:z1,l0=lim?Math.max(A0,lim[0]):A0,l1=lim?Math.min(A1,lim[1]):A1,R=(y1-y0)/2,sg=side[0]==='+'?1:-1;
+  const seg=(a,b,inset)=>{if(b-a<1e-4)return;let X0=x0,X1=x1,Z0_=z0,Z1_=z1;if(ax){X0=a;X1=b;}else{Z0_=a;Z1_=b;}
+    if(inset){if(side==='+z')Z1_-=R;else if(side==='-z')Z0_+=R;else if(side==='+x')X1-=R;else X0+=R;}box(X0,X1,y0,y1,Z0_,Z1_,mat,o);};
+  seg(A0,l0,false);seg(l0,l1,true);seg(l1,A1,false);
+  const e=side==='+z'?z1-R:side==='-z'?z0+R:side==='+x'?x1-R:x0+R;return noseRun(l0,l1,y0,y1,e,side,o);}
 const retain=[];
 function retainRun(x0,x1,z0,z1,top=BASE){retain.push(box(x0,x1,-7,top,z0,z1,M.xlGranite,{vo:BASE}));}
 // coping is laid from the outside corners: the side-wall run carries a full unit around the corner (out to the front
@@ -531,14 +553,15 @@ function retainRun(x0,x1,z0,z1,top=BASE){retain.push(box(x0,x1,-7,top,z0,z1,M.xl
 function seatRun(x0,x1,z0,z1,c={}){box(x0+0.01,x1-0.01,BASE,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE});
   const alongX=(x1-x0)>(z1-z0), ov=(COPD-WALL)/2, ox=alongX?0:ov, oz=alongX?ov:0, s0=c.s||0, s1=c.e||0;
   const a0=(alongX?x0:z0)-s0, a1=(alongX?x1:z1)+s1, org=c.from==='end'?a1:a0;
-  if(alongX)box(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz});
-  else box(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org});}
+  // rounded edge toward the seating (patio) side; side runs stay square where the front run butts in at the corner
+  if(alongX)cop(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz},'-z');
+  else cop(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org},x0<1?'+x':'-x',[a0,Z1-WALL-(COPD-WALL)/2]);}
 // side walls: retaining the full length; seat walls stop 3' short of the rock strip for the walkouts
 retainRun(0,WALL,Z0,Z1); retainRun(PW-WALL,PW,Z0,Z1);
 seatRun(0,WALL,5,Z1,{e:(COPD-WALL)/2,from:'end'}); seatRun(PW-WALL,PW,5,Z1,{e:(COPD-WALL)/2,from:'end'});
-[[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>box(a-.08,b+.08,BASE,BASE+COP,Z0,5,COPZ,{uo:a,vo:Z0}));
+[[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>cop(a-.08,b+.08,BASE,BASE+COP,Z0,5,COPZ,{uo:a,vo:Z0},a<1?'-x':'+x'));
 // cap-stone steps out each walkout (one riser down to the side yard)
-[[-1.17,0],[PW,PW+1.17]].forEach(([a,b])=>{box(a,b,-3,-0.68,Z0,5,M.riser,{vo:-0.68});box(a-.04,b+.04,-0.68,-0.68+COP,Z0,5,COPZ,{uo:a,vo:Z0});});
+[[-1.17,0],[PW,PW+1.17]].forEach(([a,b])=>{box(a,b,-3,-0.68,Z0,5,M.riser,{vo:-0.68});cop(a-.04,b+.04,-0.68,-0.68+COP,Z0,5,COPZ,{uo:a,vo:Z0},a<0?'-x':'+x');});
 // front wall: 12'-0" + 2' pier + 5' stair + 2' pier + 14'-0"
 retainRun(WALL,ST0-2,Z1-WALL,Z1); retainRun(ST1+2,PW-WALL,Z1-WALL,Z1);
 seatRun(WALL,ST0-2,Z1-WALL,Z1,{s:-(COPD-WALL)/2,from:'start'}); seatRun(ST1+2,PW-WALL,Z1-WALL,Z1,{e:-(COPD-WALL)/2,from:'end'});
@@ -568,7 +591,7 @@ const pavHouse=new T.Group(), pavHouseAcc=new T.Group(); pavHouse.visible=false;
  box(WALL,WALL+B,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:WALL,vo:B}); box(PW-WALL-B,PW-WALL,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:PW-WALL-B,vo:B});
  [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>{box(a,b,-7,BASE,0,Z0,M.xlGranite,{parent:pavHouse,vo:BASE});
    box(a-.006,b+.006,BASE-XLC,BASE,-.006,Z0,M.xlCharcoal,{vo:BASE,parent:pavHouseAcc,cast:false});
-   box(a-.08,b+.08,BASE,BASE+COP,0,Z0,COPZ,{parent:pavHouse,uo:a,vo:0});});})();
+   cop(a-.08,b+.08,BASE,BASE+COP,0,Z0,COPZ,{parent:pavHouse,uo:a,vo:0},a<1?'-x':'+x');});})();
 retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBox,e=.006;
   box(b.min.x-e,b.max.x+e,BASE-XLC,BASE,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:accent,cast:false});});
 
@@ -577,7 +600,7 @@ const NR=5, RISE=-grade(Z1+4)/NR;
 // treads: one piece deep (no seam across the step), joints centred on the stair so each tread is a full 24" unit in the
 // middle with an equal cut at each end, lined up step to step; riser joints centred the same way
 (function(){const SC=(ST0+ST1)/2, tu=SC-23.625/24, ru=SC-15.75/24;
- const tread=(top,z0,z1)=>box(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:tu,vo:z0-.04});
+ const tread=(top,z0,z1)=>cop(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:tu,vo:z0-.04},'+z');
  box(ST0,ST1,-4,-COP,Z1-WALL,Z1,M.riser,{uo:ru,vo:-COP}); tread(0,Z1-WALL,Z1);
  for(let i=1;i<NR;i++){const top=-RISE*i, z0=Z1+(i-1), z1=Z1+i;
    box(ST0,ST1,-5,top-COP,z0,z1,M.riser,{uo:ru,vo:top-COP}); tread(top,z0,z1);}})();
@@ -621,23 +644,23 @@ const CAKE_LW=7;   // wedding-cake landing: 7'-0" wide, centred on the 6' slider
  function landing(G,xa,xb){const z0=Z0,z1=Z0+2.5,top=SILL-r,P={parent:G};
    box(xa,xb,-0.6,top-COP,z0,z1,M.riser,{...P,uo:BAYC-15.75/24,vo:top-COP});
    const CD=14/12, x0=xa-.03, x1=xb+.03, zf=z1+.06-CD;
-   box(x0,x1,top-COP,top,zf,z1+.06,M.copX,{...P,uo:uoFor(x1-x0),vo:zf-.02});
-   box(x0,x0+CD,top-COP,top,z0,zf,COPZ,{...P,uo:x0,vo:zf});
-   box(x1-CD,x1,top-COP,top,z0,zf,COPZ,{...P,uo:x1-CD,vo:zf});
+   cop(x0,x1,top-COP,top,zf,z1+.06,M.copX,{...P,uo:uoFor(x1-x0),vo:zf-.02},'+z');
+   cop(x0,x0+CD,top-COP,top,z0,zf,COPZ,{...P,uo:x0,vo:zf},'-x');
+   cop(x1-CD,x1,top-COP,top,z0,zf,COPZ,{...P,uo:x1-CD,vo:zf},'+x');
    box(x0+CD,x1-CD,top-COP,top-.002,z0,zf,herringbone((x1-x0-2*CD)*12,(zf-z0)*12),{...P,uo:x0+CD,vo:z0});}
  // straight: full 10' bay width, two 11" treads across the front
  landing(stepsS,BAY0,BAY1);
  [1,2].forEach(k=>{const top=SILL-(k+1)*r, z0=Z0+2.5+(k-1)*TD, z1=z0+TD, P={parent:stepsS};
    box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{...P,uo:BAYC-15.75/24,vo:top-COP});
-   box(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:uoFor(BAY1-BAY0+.06),vo:z0-.04});});
+   cop(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:uoFor(BAY1-BAY0+.06),vo:z0-.04},'+z');});
  // wedding cake: narrower landing, each tread below wraps both sides and the front; front run carries the corners,
  // side runs turned front-to-back and counted from the corner
  const la=BAYC-CAKE_LW/2, lb=BAYC+CAKE_LW/2; landing(stepsW,la,lb);
  [1,2].forEach(k=>{const top=SILL-(k+1)*r, xa=la-k*TD, xb=lb+k*TD, zf=Z0+2.5+k*TD, zb=zf-TD, P={parent:stepsW};
    box(xa,xb,-0.6,top-COP,Z0,zf,M.riser,{...P,uo:BAYC-15.75/24,vo:top-COP});
-   box(xa-.03,xb+.03,top-COP,top,zb,zf+.06,M.copX,{...P,uo:uoFor(xb-xa+.06),vo:zb-.04});
-   box(xa-.03,xa+TD,top-COP,top,Z0,zb,COPZ,{...P,uo:xa-.03,vo:zb});
-   box(xb-TD,xb+.03,top-COP,top,Z0,zb,COPZ,{...P,uo:xb-TD,vo:zb});});})();
+   cop(xa-.03,xb+.03,top-COP,top,zb,zf+.06,M.copX,{...P,uo:uoFor(xb-xa+.06),vo:zb-.04},'+z');
+   cop(xa-.03,xa+TD,top-COP,top,Z0,zb,COPZ,{...P,uo:xa-.03,vo:zb},'-x');
+   cop(xb-TD,xb+.03,top-COP,top,Z0,zb,COPZ,{...P,uo:xb-TD,vo:zb},'+x');});})();
 
 // the patio border wraps the door steps: a soldier course up each side and across the front of the bottom riser,
 // so the steps sit in a dark frame like the rest of the patio edges (corners carried by the front run)
