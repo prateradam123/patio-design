@@ -337,7 +337,7 @@ const M={
 // grass texture from noise
 (function(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#55703a';g.fillRect(0,0,256,256);
  for(let i=0;i<9000;i++){const v=Math.random();g.fillStyle=v<.5?'rgba(60,82,44,.35)':'rgba(140,160,96,.25)';g.fillRect(Math.random()*256,Math.random()*256,1.5,2.5);}
- const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(30,30);t.encoding=T.sRGBEncoding;M.grass=new T.MeshStandardMaterial({map:t,roughness:1});})();
+ const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(138,138);t.encoding=T.sRGBEncoding;M.grass=new T.MeshStandardMaterial({map:t,roughness:1});})();
 
 // wrap a group built in world coordinates in a pivot at (cx,cz), so it can be moved and turned about its own centre
 function pivot(g,cx,cz){g.parent.updateMatrixWorld(true);const P=new T.Group();P.position.set(cx,0,cz);g.parent.add(P);P.updateMatrixWorld(true);P.attach(g);return P;}
@@ -469,11 +469,14 @@ const EDGE=3.625/12, XLC=5.875/12, COP=2.375/12, COPD=14/12;
 const SEATTOP=BASE+5*EDGE;                      // 5 Pisa Edge courses -> 16.1" above patio, + 2-3/8" coping = 18.5" seat
 const SILL=31/12;                               // slider sill 31" above the patio (4 risers of 7-3/4")
 const ST0=14, ST1=19;                           // yard stair: 14'-0" of wall, 5'-0" stair, 16'-0" of wall
-const grade=z=>-0.483-0.1167*Math.max(z,0);     // plot-plan grades 946.1 at the house to 940.5 at the rear line (48')
+// plot-plan grades 946.1 at the house to 940.5 at the rear line (48'), an even 11.7% between them; past the rear line
+// the slope eases out to level over 12' instead of falling forever (which tilted the whole horizon)
+const GS=0.1167, GL=48, GE=12;
+const grade=z=>{z=Math.max(z,0);if(z<=GL)return -0.483-GS*z;const t=Math.min(z-GL,GE);return -0.483-GS*GL-GS*(t-t*t/(2*GE));};
 const ground=z=>grade(z);
 
 // ground
-(function(){const g=new T.PlaneGeometry(260,220,1,220);g.rotateX(-Math.PI/2);g.translate(17.5,0,60);
+(function(){const g=new T.PlaneGeometry(1200,1200,1,1200);g.rotateX(-Math.PI/2);g.translate(17.5,0,60);   // big enough that its edge is lost in the haze
  const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setY(i,ground(p.getZ(i))-0.03);g.computeVertexNormals();
  const m=new T.Mesh(g,M.grass);m.receiveShadow=true;scene.add(m);})();
 (function(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#8c877d';g.fillRect(0,0,256,256);
