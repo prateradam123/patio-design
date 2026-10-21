@@ -355,7 +355,7 @@ function box(x0,x1,y0,y1,z0,z1,mat,opts={}){
 // ---- block textures built from the real unit sizes (inches), filled with crops of Unilock's photos
 const PPI=6;
 function blockTex(key,bw,bh,cols,rows,o={}){
-  const W=Math.round(bw*cols*PPI),H=Math.round(bh*rows*PPI);
+  const PPI_=o.ppi||PPI, W=Math.round(bw*cols*PPI_),H=Math.round(bh*rows*PPI_);
   const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
   const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.encoding=T.sRGBEncoding;t.anisotropy=8;
   t.repeat.set(12/(bw*cols),12/(bh*rows));
@@ -371,12 +371,20 @@ function blockTex(key,bw,bh,cols,rows,o={}){
         const score=worst-tot/n; if(!best||score>best[0])best=[score,x,y,sw,sh,tot/n];}
       return best;}
     let gm=0,gn=0;for(let y=0;y<sc.height;y+=4)for(let x=0;x<sc.width;x+=4){gm+=lum(x,y);gn++;} gm/=gn;
-    const bwp=bw*PPI,bhp=bh*PPI;
+    const bwp=bw*PPI_,bhp=bh*PPI_;
     for(let r=0;r<rows;r++){const off=o.stack?0:(r%2)*bwp/2;
-      for(let x=-off;x<W;x+=bwp){const p=pick(bwp,bhp);
+      for(let x=-off;x<W;x+=bwp){
+        if(o.tile){   // fine-grained close-up swatch: tile it at true scale (mirrored, so no seams) instead of stretching one crop over the unit
+          const k=PPI_/sppi,tw=sc.width*k,th=sc.height*k,ox=Math.random()*tw,oy=Math.random()*th,tgt=gm*(1+(Math.random()-.5)*0.06);
+          [x,x-W].forEach(xx=>{if(xx===x-W&&x+bwp<=W)return;g.save();g.beginPath();g.rect(xx,r*bhp,bwp,bhp);g.clip();
+            for(let j=0,ty=r*bhp-oy;ty<(r+1)*bhp;j++,ty+=th)for(let i=0,tx=xx-ox;tx<xx+bwp;i++,tx+=tw){
+              g.save();g.translate(tx+(i%2?tw:0),ty+(j%2?th:0));g.scale(i%2?-1:1,j%2?-1:1);g.drawImage(sc,0,0,tw,th);g.restore();}
+            const a=tgt>gm?(tgt-gm)/(255-gm):(gm-tgt)/gm;g.fillStyle=`rgba(${tgt>gm?'255,255,255':'0,0,0'},${a})`;g.fillRect(xx,r*bhp,bwp,bhp);g.restore();});
+          continue;}
+        const p=pick(bwp,bhp);
         const tgt=gm*(1+(Math.random()-.5)*0.08), m=p[5], a=tgt>m?(tgt-m)/(255-m):(m-tgt)/m, col=tgt>m?'255,255,255':'0,0,0';
         [x,x-W].forEach(xx=>{if(xx===x-W&&x+bwp<=W)return;g.drawImage(sc,p[1],p[2],p[3],p[4],xx,r*bhp,bwp,bhp);g.fillStyle=`rgba(${col},${a})`;g.fillRect(xx,r*bhp,bwp,bhp);});}}
-    g.strokeStyle=o.joint||'rgba(25,25,25,.85)';g.lineWidth=1.4;
+    g.strokeStyle=o.joint||'rgba(25,25,25,.85)';g.lineWidth=o.jw||1.4;
     for(let r=0;r<=rows;r++){g.beginPath();g.moveTo(0,r*bhp);g.lineTo(W,r*bhp);g.stroke();}
     for(let r=0;r<rows;r++){const off=o.stack?0:(r%2)*bwp/2;for(let x=-off;x<=W;x+=bwp){g.beginPath();g.moveTo(x,r*bhp);g.lineTo(x,(r+1)*bhp);g.stroke();}}
     if(o.rotate){const c2=document.createElement('canvas');c2.width=H;c2.height=W;const g2=c2.getContext('2d');g2.translate(H,0);g2.rotate(Math.PI/2);g2.drawImage(c,0,0);t.image=c2;t.repeat.set(12/(bh*rows),12/(bw*cols));}
@@ -391,8 +399,9 @@ M.riser=mat(blockTex('pxlgr',15.75,5.875,4,6,{sppi:9}),.9);
 // stair riser options: regular Pisa Granite (rugged face), Pisa XL Smooth Granite (matches the retaining wall), Pisa XL Smooth Midnight Charcoal
 const RISER={xlgr:M.riser.map, xlcc:blockTex('pxlcc',15.75,5.875,4,6,{sppi:9})};
 function setRiser(k){M.riser.map=RISER[k]||RISER.xlgr;M.riser.needsUpdate=true;}
-M.copX=mat(blockTex('endc',23.625,14,4,1,{stack:true,sppi:5,joint:'rgba(20,20,20,.9)'}),.85);
-M.copZ=mat(blockTex('endc',23.625,14,4,1,{stack:true,sppi:5,joint:'rgba(20,20,20,.9)',rotate:true}),.85);
+// Endura Dark Charcoal: the swatch is a close-up (~4.5" across), so it's tiled at ~110 px/in on a 16 px/in canvas
+M.copX=mat(blockTex('endc',23.625,14,4,1,{stack:true,tile:true,sppi:110,ppi:16,jw:2,joint:'rgba(18,18,18,.9)'}),.8);
+M.copZ=mat(blockTex('endc',23.625,14,4,1,{stack:true,tile:true,sppi:110,ppi:16,jw:2,joint:'rgba(18,18,18,.9)',rotate:true}),.8);
 // Unilock Holland Premier, Dark Charcoal: 3-7/8" x 7-7/8", one soldier course (long side across the border), joints lined up
 M.borderX=mat(blockTex('bhdc',3.875,7.875,16,1,{sppi:8,stack:true}));
 M.borderZ=mat(blockTex('bhdc',3.875,7.875,16,1,{sppi:8,stack:true,rotate:true}));
