@@ -116,11 +116,12 @@ body.closed .openbtn{display:flex}
 /* share / photo */
 .stagebtns{position:absolute;top:12px;right:max(12px,env(safe-area-inset-right,0px));display:flex;gap:6px;z-index:5}
 .stagebtns button{display:flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--panel) 92%,transparent);box-shadow:0 1px 3px rgba(0,0,0,.18);padding:7px 10px;border-radius:8px;font-size:12.5px}
+.stagebtns button[aria-checked="true"]{background:var(--on);color:var(--onink)}
 .stagebtns svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .hbb [hidden],.hbc[hidden]{display:none}
 #err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
 @media (max-width:760px){
-  .legend{top:46px;width:auto;right:122px;max-height:calc(100% - 270px);padding:7px 9px 9px;font-size:11px}
+  .legend{top:92px;width:auto;right:10px;max-height:calc(100% - 300px);padding:7px 9px 9px;font-size:11px}
   .lgr{grid-template-columns:22px 1fr;gap:7px;padding:4px 0}.lgs{width:22px;height:22px}.lgr b{font-size:11.5px}.lgr span{font-size:10.5px}
   .lga .big{font-size:18px}.lgl{font-size:11px}.lgn{font-size:10.5px}
   body{display:block}
@@ -174,7 +175,6 @@ body.closed .openbtn{display:flex}
       <button data-dims="grid">+ 1' grid</button>
     </div>
     <div class="row"><label for="t-tape">Tap-to-measure</label><button class="sw" id="t-tape" role="switch" aria-checked="false"></button></div>
-    <div class="row"><label for="t-legend">Materials &amp; area</label><button class="sw" id="t-legend" role="switch" aria-checked="false"></button></div>
     <div class="row"><label for="t-person">Person for scale (5'-10")</label><button class="sw" id="t-person" role="switch" aria-checked="false"></button></div>
   </section>
 
@@ -269,6 +269,7 @@ body.closed .openbtn{display:flex}
   <button class="openbtn" id="openBtn" aria-controls="panel"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>Controls</button>
   <div class="hint" id="hint"></div>
   <div class="stagebtns" role="group" aria-label="Share">
+    <button id="t-legend" role="switch" aria-checked="false" title="Materials used and patio square footage"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="3" height="3"/><rect x="2" y="10.5" width="3" height="3"/><path d="M7.5 4h6.5M7.5 12h6.5M7.5 8h6.5"/><rect x="2" y="6.5" width="3" height="3"/></svg><span>Materials</span></button>
     <button id="shareBtn" title="Copy a link to exactly this view"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 9.5l3-3M7 4.5l1.2-1.2a2.5 2.5 0 013.5 3.5L10.5 8M9 11.5l-1.2 1.2a2.5 2.5 0 01-3.5-3.5L5.5 8"/></svg><span>Share view</span></button>
     <button id="photoBtn" title="Save this view as a picture"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5h2.5l1-1.5h5l1 1.5H14v7.5H2z"/><circle cx="8" cy="8.5" r="2.3"/></svg><span>Save photo</span></button>
   </div>
