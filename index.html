@@ -95,6 +95,19 @@ body.closed .openbtn{display:flex}
 .hbchip{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:6;background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--rule);
   border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);padding:8px 10px;display:grid;gap:6px;max-width:calc(100% - 24px);font-size:12.5px}
 .hbchip[hidden]{display:none}
+.legend{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:12px;z-index:5;width:300px;max-height:calc(100% - 70px);overflow:auto;
+  background:color-mix(in srgb,var(--panel) 95%,transparent);border:1px solid var(--rule);padding:10px 12px 12px;font-size:12px;color:var(--ink);box-shadow:0 2px 12px rgba(0,0,0,.14)}
+.legend[hidden]{display:none}
+.lgh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.lgh b{font:600 11px/1 var(--f-mono,monospace);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lgh .lgx{border:0;background:none;font-size:18px;line-height:1;color:var(--muted);padding:0 2px;cursor:pointer;min-height:0}
+.lgr{display:grid;grid-template-columns:28px 1fr;gap:9px;align-items:center;padding:5px 0;border-top:1px solid var(--rule)}
+.lgs{display:block;width:28px;height:28px;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.lgr b{display:block;font-weight:600;font-size:12px;line-height:1.25}.lgr span{display:block;color:var(--muted);font-size:11.5px;line-height:1.3}
+.lga{margin-top:6px;padding-top:9px;border-top:2px solid var(--rule)}
+.lga .big{font-size:22px;font-weight:700;line-height:1.1}.lga .big small{font-size:11.5px;font-weight:500;color:var(--muted);margin-left:6px}
+.lgl{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px}.lgl span{color:var(--muted)}.lgl b{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lgn{margin-top:6px;font-size:11.5px;color:var(--muted)}
 .hbt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hbc{font:400 12px/1.35 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--muted)}
 .hbc b{font-weight:500}.hbc .ok{color:#2f8a4a}.hbc .warn{color:#b8781c}.hbc .bad{color:#c2382f}
@@ -107,6 +120,9 @@ body.closed .openbtn{display:flex}
 .hbb [hidden],.hbc[hidden]{display:none}
 #err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
 @media (max-width:760px){
+  .legend{top:46px;width:auto;right:122px;max-height:calc(100% - 270px);padding:7px 9px 9px;font-size:11px}
+  .lgr{grid-template-columns:22px 1fr;gap:7px;padding:4px 0}.lgs{width:22px;height:22px}.lgr b{font-size:11.5px}.lgr span{font-size:10.5px}
+  .lga .big{font-size:18px}.lgl{font-size:11px}.lgn{font-size:10.5px}
   body{display:block}
   #stage{position:fixed;inset:0;height:100vh;height:100dvh}
   .panel{position:fixed;left:0;right:0;bottom:0;z-index:10;width:auto;max-height:72vh;max-height:72dvh;border-right:0;border-top:1px solid var(--rule);
@@ -158,6 +174,7 @@ body.closed .openbtn{display:flex}
       <button data-dims="grid">+ 1' grid</button>
     </div>
     <div class="row"><label for="t-tape">Tap-to-measure</label><button class="sw" id="t-tape" role="switch" aria-checked="false"></button></div>
+    <div class="row"><label for="t-legend">Materials &amp; area</label><button class="sw" id="t-legend" role="switch" aria-checked="false"></button></div>
     <div class="row"><label for="t-person">Person for scale (5'-10")</label><button class="sw" id="t-person" role="switch" aria-checked="false"></button></div>
   </section>
 
@@ -262,6 +279,7 @@ body.closed .openbtn{display:flex}
     <rect x="-2000" y="-2000" width="4100" height="4100" fill="#050505" mask="url(#eyes)"/></svg><div class="tag">neighbor cam</div></div>
   <div class="peep win" id="winpeep" aria-hidden="true"><div class="tag">upstairs window</div></div>
   <div class="toast" id="toast" role="status"></div>
+  <div class="legend" id="legend" hidden role="region" aria-label="Materials and patio area"><div class="lgh"><b>Materials</b><button class="lgx" id="lgX" aria-label="Close materials">×</button></div><div id="lgList"></div><div class="lga" id="lgArea"></div></div>
   <div class="hbchip" id="hbChip" hidden role="group" aria-label="Hosting bar">
     <div class="hbt"><b id="selT">Hosting bar</b> <span class="muted" id="selI"></span></div>
     <div class="hbc" id="hbClr"></div>
@@ -1749,7 +1767,49 @@ let last=performance.now();
 
 // ---- share a view: everything on screen (camera, switches, time, moved furniture) rides in the link as #s=...
 const PAGES_URL='https://prateradam123.github.io/patio-design/', ON_PAGES=/github\.io$/.test(location.hostname);
-const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person'];
+// ---- Measure > Materials & area: what each part is built from (follows the current options) and the patio's square
+// footage, measured from the surfaces actually showing (1" grid, so overlaps and the door steps are counted once)
+const LEG=(function(){const el=document.getElementById('legend'),list=document.getElementById('lgList'),area=document.getElementById('lgArea');
+ const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
+ const img=k=>`background-image:url(${TEX[k]})`, col=c=>`background:${c}`;
+ function rows(){const R=[],add=(sw,part,prod)=>R.push([sw,part,prod]);
+  const rb=document.querySelector('[data-riser][aria-pressed="true"]'),rc=!!rb&&rb.dataset.riser==='xlcc';
+  add(img('gf'),'Patio field','Unilock Beacon Hill Smooth · Granite Fusion · random 3-piece');
+  add(img('bhdc'),gzRug.visible?'Border + gazebo border':'Border','Unilock Holland Premier · Dark Charcoal · one soldier course');
+  add(img('gf'),'Door landing inlay','Holland Premier · Granite Fusion · 45° herringbone');
+  add(img('endc'),'Coping, stair treads, landing frame','Unilock Endura · Dark Charcoal · Fullnose');
+  add(img('pe_gr'),'Seat walls','Unilock Pisa Edge · Granite');
+  add(img('pxlgr'),'Retaining wall + stair pillars','Unilock Pisa XL Smooth · Granite');
+  if(accent.visible)add(img('pxlcc'),'Accent course','Pisa XL Smooth · Midnight Charcoal');
+  add(img(rc?'pxlcc':'pxlgr'),'Stair risers','Pisa XL Smooth · '+(rc?'Midnight Charcoal':'Granite'));
+  add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
+  add(col('#b27a47'),'Gazebo','Yardistry Meridian 12×12 · cedar');
+  if(!toHouse)add(col('#8c877d'),'Strip along the house','River rock');
+  if(P2.pw)add(col('#b27a47'),'Privacy wall · Phase 2','Yardistry Meridian privacy wall · 55" TV');
+  if(P2.bed)add(img('pxlgr'),'Arborvitae bed · Phase 2','Pisa XL Smooth · Granite, uncapped · Emerald Green');
+  if(P2.rock&&!toHouse)add(col('#6f8a52'),'Rock-strip plants · Phase 2','small plants + path lights');
+  list.innerHTML=R.map(([sw,p,d])=>`<div class="lgr"><i class="lgs" style="${sw}"></i><div><b>${p}</b><span>${d}</span></div></div>`).join('');}
+ function areas(){const S=12,nx=PW*S,nz=Z1*S,g=new Uint8Array(nx*nz),bb=new T.Box3();
+  const mark=(m,bit)=>{bb.setFromObject(m);const a=Math.max(0,Math.round(bb.min.x*S)),b=Math.min(nx,Math.round(bb.max.x*S)),c=Math.max(0,Math.round(bb.min.z*S)),d=Math.min(nz,Math.round(bb.max.z*S));
+    for(let z=c;z<d;z++)for(let x=a;x<b;x++)g[z*nx+x]|=bit;};
+  scene.traverse(o=>{if(!o.isMesh||!vis(o))return;let st=false;for(let p=o;p;p=p.parent)if(p===stepsS||p===stepsW){st=true;break;}
+    if(o.material===M.field)mark(o,1);else if(o.material===M.borderX||o.material===M.borderZ)mark(o,2);else if(st)mark(o,4);});
+  let f=0,b=0,st=0;for(let i=0;i<g.length;i++){const v=g[i];if(v&4)st++;else if(v&2)b++;else if(v&1)f++;}
+  return {field:f/144,border:b/144,steps:st/144};}
+ const n=v=>Math.round(v).toLocaleString();
+ function refresh(){if(el.hidden)return;rows();const A=areas(),tot=A.field+A.border+A.steps;
+  area.innerHTML=`<div class="lgh"><b>Patio area</b></div><div class="big">${n(tot)} sq ft<small>paved${toHouse?', to the house':' inside the walls'}</small></div>
+   <div class="lgl"><span>Beacon Hill field</span><b>${n(A.field)} sq ft</b></div>
+   <div class="lgl"><span>Holland Premier border</span><b>${n(A.border)} sq ft · ${n(A.border/B)} lin ft</b></div>
+   <div class="lgl"><span>Door steps + landing</span><b>${n(A.steps)} sq ft</b></div>
+   <div class="lgl"><span>Overall, outside the walls</span><b>35' × 17' = 595 sq ft</b></div>
+   <div class="lgn">≈ ${Math.ceil(A.field*1.05/116.57)} Beacon Hill random bundles (116.57 sq ft each), with 5% for cuts</div>`;}
+ const swEl=sw('t-legend',on=>{el.hidden=!on;refresh();});
+ document.getElementById('lgX').addEventListener('click',()=>{swEl.click();});
+ document.getElementById('panel').addEventListener('click',()=>setTimeout(refresh,0));
+ return {refresh,areas};})();
+window.__legend=()=>{LEG.refresh();return {rows:[...document.querySelectorAll('#lgList .lgr b')].map(b=>b.textContent),area:document.getElementById('lgArea').innerText,a:LEG.areas()};};
+const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person','t-legend'];
 const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps'];
 const r2=v=>Math.round(v*100)/100;
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
