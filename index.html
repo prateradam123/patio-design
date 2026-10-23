@@ -565,7 +565,14 @@ function cop(x0,x1,y0,y1,z0,z1,mat,o,side,lim){if(!side)return box(x0,x1,y0,y1,z
   seg(A0,l0,false);seg(l0,l1,true);seg(l1,A1,false);
   const e=side==='+z'?z1-R:side==='-z'?z0+R:side==='+x'?x1-R:x0+R;return noseRun(l0,l1,y0,y1,e,side,o);}
 const retain=[];
-function retainRun(x0,x1,z0,z1,top=BASE){retain.push(box(x0,x1,-7,top,z0,z1,M.xlGranite,{vo:BASE}));}
+// Pisa XL Smooth is built battered: Unilock's 3 deg batter on a 5-7/8" course = ~5/16" setback per course. The wall is
+// laid course by course, each one stepping back toward the patio from the one below; the top course stays on the design
+// line, so the patio, seat walls and coping don't move. o: nx/px/nz/pz = which faces are exposed (step out going down).
+const XSB=5.875*Math.tan(3*Math.PI/180)/12;
+function retainRun(x0,x1,z0,z1,o={}){const top=o.top==null?BASE:o.top,mat=o.mat||M.xlGranite,P={vo:BASE};if(o.parent)P.parent=o.parent;let first=null;
+  for(let k=0,y1=top;;k++){const s=k*XSB,last=y1-XLC<=-4.4,y0=last?-7:y1-XLC;
+    const m=box(x0-(o.nx?s:0),x1+(o.px?s:0),y0,y1,z0-(o.nz?s:0),z1+(o.pz?s:0),mat,P);if(!first)first=m;if(last)break;y1-=XLC;}
+  if(o.push!==false)retain.push(first);return first;}
 // coping is laid from the outside corners: the side-wall run carries a full unit around the corner (out to the front
 // overhang), the front run butts into it, and the joints count off in 24" units from that corner so any cut piece lands
 // at the stair pier or the walkout end, not at the corner. c = {s:extend start, e:extend end, from:'start'|'end'}
@@ -576,13 +583,13 @@ function seatRun(x0,x1,z0,z1,c={}){box(x0+0.01,x1-0.01,BASE,SEATTOP,z0+0.01,z1-0
   if(alongX)cop(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz},'-z');
   else cop(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org},x0<1?'+x':'-x',[a0,Z1-WALL-(COPD-WALL)/2]);}
 // side walls: retaining the full length; seat walls stop 3' short of the rock strip for the walkouts
-retainRun(0,WALL,Z0,Z1); retainRun(PW-WALL,PW,Z0,Z1);
+retainRun(0,WALL,Z0,Z1,{nx:1,pz:1}); retainRun(PW-WALL,PW,Z0,Z1,{px:1,pz:1});
 seatRun(0,WALL,5,Z1,{e:(COPD-WALL)/2,from:'end'}); seatRun(PW-WALL,PW,5,Z1,{e:(COPD-WALL)/2,from:'end'});
 [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>cop(a-.08,b+.08,BASE,BASE+COP,Z0,5,COPZ,{uo:a,vo:Z0},a<1?'-x':'+x'));
 // cap-stone steps out each walkout (one riser down to the side yard)
 [[-1.17,0],[PW,PW+1.17]].forEach(([a,b])=>{box(a,b,-3,-0.68,Z0,5,M.riser,{vo:-0.68});cop(a-.04,b+.04,-0.68,-0.68+COP,Z0,5,COPZ,{uo:a,vo:Z0},a<0?'-x':'+x');});
 // front wall: 12'-0" + 2' pier + 5' stair + 2' pier + 14'-0"
-retainRun(WALL,ST0-2,Z1-WALL,Z1); retainRun(ST1+2,PW-WALL,Z1-WALL,Z1);
+retainRun(WALL,ST0-2,Z1-WALL,Z1,{pz:1}); retainRun(ST1+2,PW-WALL,Z1-WALL,Z1,{pz:1});
 seatRun(WALL,ST0-2,Z1-WALL,Z1,{s:-(COPD-WALL)/2,from:'start'}); seatRun(ST1+2,PW-WALL,Z1-WALL,Z1,{e:-(COPD-WALL)/2,from:'end'});
 // 2'x2' piers, projecting 6" past both wall faces: 4 Pisa courses + cap = 24" above the patio
 const PIERTOP=BASE+4*XLC, PCAP=3.875/12, PCAPW=29.125/12;
@@ -608,7 +615,7 @@ const pavHouse=new T.Group(), pavHouseAcc=new T.Group(); pavHouse.visible=false;
  box(WALL,BAY0,-0.6,0.02,0,B,M.borderX,{...P,uo:WALL,vo:0}); box(BAY1,PW-WALL,-0.6,0.02,0,B,M.borderX,{...P,uo:BAY1,vo:0});   // along the house
  BAYHUG.push(box(BAY0-B,BAY0,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY0-B,vo:B}),box(BAY1,BAY1+B,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY1,vo:B}));  // hugging the bay sides
  box(WALL,WALL+B,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:WALL,vo:B}); box(PW-WALL-B,PW-WALL,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:PW-WALL-B,vo:B});
- [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>{box(a,b,-7,BASE,0,Z0,M.xlGranite,{parent:pavHouse,vo:BASE});
+ [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>{retainRun(a,b,0,Z0,{parent:pavHouse,push:false,nx:a<1,px:a>1});
    box(a-.006,b+.006,BASE-XLC,BASE,-.006,Z0,M.xlCharcoal,{vo:BASE,parent:pavHouseAcc,cast:false});
    cop(a-.08,b+.08,BASE,BASE+COP,0,Z0,COPZ,{parent:pavHouse,uo:a,vo:0},a<1?'-x':'+x');});})();
 retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBox,e=.006;
@@ -1155,8 +1162,10 @@ function setBedTop(m){bedTop.material=BEDMAT[m];}
 // bed walls -- a dark top row on an uncapped wall reads as a cap)
 const XLTOP=new T.MeshStandardMaterial({color:0x8b8c8b,roughness:.95});
 (function(){const P={parent:bed}, o=1/12;
- [[BED_X0,BED_X0+1,BED_Z0,Z1],[BED_X0+1,0,Z1-1,Z1],[BED_X0+1,0,BED_Z0,BED_Z0+1]].forEach(([a,b,c,d])=>{
-   box(a,b,-7,BASE,c,d,[M.xlGranite,M.xlGranite,XLTOP,M.xlGranite,M.xlGranite,M.xlGranite],{...P,vo:BASE});});
+ const BM=[M.xlGranite,M.xlGranite,XLTOP,M.xlGranite,M.xlGranite,M.xlGranite];   // battered like the patio wall, so the front return stays flush with it
+ retainRun(BED_X0,BED_X0+1,BED_Z0,Z1,{mat:BM,parent:bed,push:false,nx:1,pz:1});
+ retainRun(BED_X0+1,0,Z1-1,Z1,{mat:BM,parent:bed,push:false,pz:1});
+ retainRun(BED_X0+1,0,BED_Z0,BED_Z0+1,{mat:BM,parent:bed,push:false,nz:1});
  // no cap on the bed walls (owner's call): the top course is glued down and the mulch sits ~2" below its top
  // bed topping over planting soil: black shredded mulch, or the same river rock as the strip along the house
  const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.fillStyle='#141313';g.fillRect(0,0,128,128);
