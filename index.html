@@ -229,6 +229,9 @@ body.closed .openbtn{display:flex}
       <button data-ystair="terrace">Fire-pit terrace</button>
       <button data-ystair="landcake">Landing + cake</button>
       <button data-ystair="wide">Wide 8'</button>
+      <button data-ystair="cakebed">Cake + planters</button>
+      <button data-ystair="firecircle">Fire circle</button>
+      <button data-ystair="bowl">Sunken bowl</button>
     </div>
     <div class="row"><label>Door steps</label></div>
     <div class="seg" role="group" aria-label="Door steps">
@@ -513,9 +516,10 @@ const ground=z=>grade(z);
 
 // ground
 const _w0=scene.children.length;
-(function(){const g=new T.PlaneGeometry(260,220,1,220);g.rotateX(-Math.PI/2);g.translate(17.5,0,60);
+const GND={mesh:null,feat:null};
+(function(){const g=new T.PlaneGeometry(260,220,260,220);g.rotateX(-Math.PI/2);g.translate(17.5,0,60);
  const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setY(i,ground(p.getZ(i))-0.03);g.computeVertexNormals();
- const m=new T.Mesh(g,M.grass);m.receiveShadow=true;scene.add(m);})();
+ const m=new T.Mesh(g,M.grass);m.receiveShadow=true;scene.add(m);GND.mesh=m;})();
 (function(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#8c877d';g.fillRect(0,0,256,256);
  for(let i=0;i<1400;i++){const r=2+Math.random()*5,v=120+Math.random()*90|0;g.fillStyle=`rgb(${v},${v-6},${v-16})`;g.beginPath();g.ellipse(Math.random()*256,Math.random()*256,r,r*.75,Math.random()*3,0,7);g.fill();}
  const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(1/3,1/3);t.encoding=T.sRGBEncoding;M.rock=new T.MeshStandardMaterial({map:t,roughness:1});})();
@@ -900,8 +904,49 @@ const SV={straight:{3:{g:YARD[3].g,lt:[]},2:{g:YARD[2].g,lt:[]}}}, PITL=[]; let 
  function openTread(G,a,b){const P={parent:G};box(a,b,-4,-COP,Z1-WALL,Z1,M.riser,{...P,uo:a,vo:-COP});
    cop(a-.03,b+.03,-COP,0,Z1-WALL,Z1+.06,M.copX,{...P,uo:a,vo:Z1-WALL-.04},'+z');}
  const nose=(L,x,top,z)=>L.push([x,top-COP-.22,z+.07]);   // step light tucked under a nosing
+ // raised planting bed: uncapped Granite Pisa XL walls, black mulch, low evergreens
+ function pocket(G,xa,xb,za,zb,top,k,per=2.2){const P={parent:G},t=.42;
+   box(xa,xa+t,-6.5,top,za,zb,M.xlGranite,{...P,vo:top});box(xb-t,xb,-6.5,top,za,zb,M.xlGranite,{...P,vo:top});
+   box(xa+t,xb-t,-6.5,top,zb-t,zb,M.xlGranite,{...P,uo:xa,vo:top});
+   box(xa+t,xb-t,-6.5,top-.16,za,zb-t,MULCH,{...P,uo:xa,vo:za,cast:false});
+   const cx=(xa+xb)/2,n=Math.max(1,Math.round((zb-za)/per));
+   for(let j=0;j<n;j++){const m=new T.Mesh(shrubG,M.shrub),s=.62+.12*((j*7+k)%3);m.scale.set(s,s,s);
+     m.position.set(cx+(j%2?.25:-.25),top-.16+s*.55,za+(zb-za-t)*(j+.5)/n);m.castShadow=m.receiveShadow=true;G.add(m);}}
  const MULCH=new T.MeshStandardMaterial({color:0x2a2420,roughness:1}), shrubG=new T.SphereGeometry(1,14,10);(function(){const p=shrubG.attributes.position;
    for(let i=0;i<p.count;i++){const k=1+.12*Math.sin(p.getX(i)*7+p.getZ(i)*5);p.setXYZ(i,p.getX(i)*k,p.getY(i)*k*.8,p.getZ(i)*k);}shrubG.computeVertexNormals();})();
+ // round fire pit: Granite Pisa XL ring, dark cap, lava rock, flames on the Fire switch (base = level it stands on)
+function firePit(G,cx,cz,TL){const R=1.85, H=1.15;
+    const pg=new T.CylinderGeometry(R,R,H,48,1,true),uv=pg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*2*Math.PI*R,uv.getY(i)*H);
+    const pm=new T.Mesh(pg,M.xlGranite);pm.position.set(cx,TL+H/2,cz);pm.castShadow=pm.receiveShadow=true;G.add(pm);
+    const capM=new T.MeshStandardMaterial({color:0x343537,roughness:.85,side:T.DoubleSide});
+    const cap=new T.Mesh(new T.CylinderGeometry(R+.08,R+.08,.2,48,1,true),capM);cap.position.set(cx,TL+H+.1,cz);cap.castShadow=true;G.add(cap);
+    const capT=new T.Mesh(new T.RingGeometry(R-.6,R+.08,48),capM);capT.rotation.x=-Math.PI/2;capT.position.set(cx,TL+H+.2,cz);capT.receiveShadow=true;G.add(capT);
+    const inner=new T.Mesh(new T.CylinderGeometry(R-.6,R-.6,.34,40,1,true),new T.MeshStandardMaterial({color:0x2a2827,roughness:1,side:T.BackSide}));inner.position.set(cx,TL+H+.03,cz);G.add(inner);
+    const bed=new T.Mesh(new T.CircleGeometry(R-.6,40),new T.MeshStandardMaterial({color:0x1c1a19,roughness:1}));bed.rotation.x=-Math.PI/2;bed.position.set(cx,TL+H-.13,cz);G.add(bed);
+    const lava=new T.MeshStandardMaterial({color:0x3b2f2a,roughness:1});
+    for(let i=0;i<70;i++){const a=Math.random()*6.283,d=Math.sqrt(Math.random())*(R-.72),m=new T.Mesh(new T.DodecahedronGeometry(.07+Math.random()*.06,0),lava);m.position.set(cx+Math.cos(a)*d,TL+H-.1+Math.random()*.05,cz+Math.sin(a)*d);m.rotation.set(Math.random()*3,Math.random()*3,0);G.add(m);}
+    const fmap=flames[0].material.map;
+    for(let i=0;i<14;i++){const f=new T.Sprite(new T.SpriteMaterial({map:fmap,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:.75}));
+      const h=.7+Math.random()*.5,a=Math.random()*6.283,d=Math.random()*.55;f.center.set(.5,.06);f.position.set(cx+Math.cos(a)*d,TL+H-.02,cz+Math.sin(a)*d);
+      f.scale.set(h*.32,h,1);f.userData={h,ph:Math.random()*10};f.renderOrder=3;f.visible=flames[0].visible;G.add(f);flames.push(f);}
+    const pl=new T.PointLight(0xff8a3a,.35,14,2);pl.position.set(cx,TL+H+.9,cz);G.add(pl);PITL.push(pl);}
+ // ground shaping: features pull the lawn to a level inside their footprint and blend back to the yard grade
+ const sm=s=>s<=0?0:s>=1?1:s*s*(3-2*s);
+ const fRect=(x0,x1,z0,z1,bl,t)=>({t,s:(x,z)=>Math.hypot(Math.max(x0-x,0,x-x1),Math.max(z0-z,0,z-z1))/bl});
+ const fCirc=(cx,cz,R,bl,t)=>({t,s:(x,z)=>(Math.hypot(x-cx,z-cz)-R)/bl});
+ const fSeg=(ax,az,bx,bz,hw,bl,t)=>({t,s:(x,z)=>{const dx=bx-ax,dz=bz-az,u=Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz)));return (Math.hypot(x-ax-u*dx,z-az-u*dz)-hw)/bl;}});
+ // round paved floor: block below, herringbone inside a dark soldier ring, top at level t
+ function roundFloor(G,cx,cz,R,t){const base=new T.Mesh(new T.CylinderGeometry(R,R,6.5+t-COP,64),M.riser);base.position.set(cx,(-6.5+t-COP)/2,cz);base.receiveShadow=true;G.add(base);
+   const ringM=new T.MeshStandardMaterial({color:0x3a3a3c,roughness:.85,side:T.DoubleSide});
+   const edge=new T.Mesh(new T.CylinderGeometry(R,R,COP,64,1,true),ringM);edge.position.set(cx,t-COP/2,cz);G.add(edge);
+   const ring=new T.Mesh(new T.RingGeometry(R-.66,R,64),ringM);ring.rotation.x=-Math.PI/2;ring.position.set(cx,t,cz);ring.receiveShadow=true;G.add(ring);
+   const ri=R-.66,dg=new T.CircleGeometry(ri,64),uv=dg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*2*ri,uv.getY(i)*2*ri);
+   const disk=new T.Mesh(dg,herringbone(ri*24,ri*24));disk.rotation.x=-Math.PI/2;disk.position.set(cx,t-.004,cz);disk.receiveShadow=true;G.add(disk);}
+ // simple Adirondack chair (cedar), facing angle `face`
+ function chair(G,x,y,z,face){const c=new T.Group();c.position.set(x,y,z);c.rotation.y=face;G.add(c);const W=M.cedar,P={parent:c};
+   box(-.95,.95,1.0,1.12,-.85,.9,W,P);[-1,1].forEach(sd=>{box(sd*.95-(sd<0?.12:0),sd*.95+(sd>0?.12:0),1.9,2.0,-.9,1.05,W,P);
+     box(sd*1.0-.06,sd*1.0+.06,0,1.95,.85,1.0,W,P);box(sd*.85-.06,sd*.85+.06,0,1.05,-.85,-.7,W,P);});
+   const bk=new T.Mesh(new T.BoxGeometry(1.8,2.6,.09),W);bk.rotation.x=-.33;bk.position.set(0,2.15,-1.05);bk.castShadow=true;c.add(bk);}
  const B={
   cake(G,k,L){const g=gk(k),[n,r]=best([3,4,5,6,7],n=>-g(Z1+(n-1)*TD)/n,.52);openTread(G,ST0,ST1);
     for(let i=1;i<n;i++){const top=-r*i;slab(G,ST0-i*TD,ST1+i*TD,Z1,Z1+i*TD,top,'few',{cd:TD});nose(L,SCX-1.5,top,Z1+i*TD);nose(L,SCX+1.5,top,Z1+i*TD);}
@@ -916,13 +961,7 @@ const SV={straight:{3:{g:YARD[3].g,lt:[]},2:{g:YARD[2].g,lt:[]}}}, PITL=[]; let 
     const pk=[[ST1+1.5,ST1+4.5,Z1,Z[1][0],-3*r]];
     if(np>2)pk.push([ST0-1.5,ST0+1.5,Z[0][1],Z[2][0],-5*r],[ST1+1.5,ST1+4.5,Z[1][1],Z[2][1],-6.4*r]);
     else pk.push([ST0-1.5,ST0+1.5,Z[0][1],Z[1][1],Math.max(-4.6*r,g(Z[0][1])+.3)]);
-    pk.forEach(([xa,xb,za,zb,top])=>{const P={parent:G},t=.42;
-      box(xa,xa+t,-6.5,top,za,zb,M.xlGranite,{...P,vo:top});box(xb-t,xb,-6.5,top,za,zb,M.xlGranite,{...P,vo:top});
-      box(xa+t,xb-t,-6.5,top,zb-t,zb,M.xlGranite,{...P,uo:xa,vo:top});
-      box(xa+t,xb-t,-6.5,top-.16,za,zb-t,MULCH,{...P,uo:xa,vo:za,cast:false});
-      const cx=(xa+xb)/2,n=Math.max(1,Math.round((zb-za)/2.2));
-      for(let j=0;j<n;j++){const m=new T.Mesh(shrubG,M.shrub),s=.62+.12*((j*7+k)%3);m.scale.set(s,s,s);
-        m.position.set(cx+(j%2?.25:-.25),top-.16+s*.55,za+(zb-za-t)*(j+.5)/n);m.castShadow=m.receiveShadow=true;G.add(m);}});
+    pk.forEach(([xa,xb,za,zb,top])=>pocket(G,xa,xb,za,zb,top,k));
     return {n:2*np+1,r};},
   terrace(G,k,L){const g=gk(k),r=YARD[k].rise,nT=Math.max(3,Math.round(-(g(Z1+6)+.3)/r)),TL=-nT*r,xa=ST0-3,xb=ST1+4,za=Z1,zb=Z1+nT-1+8;openTread(G,ST0,ST1);
     // the terrace sits a few inches above the lawn at its open east side: as many risers down from the patio as that takes
@@ -934,22 +973,8 @@ const SV={straight:{3:{g:YARD[3].g,lt:[]},2:{g:YARD[2].g,lt:[]}}}, PITL=[]; let 
     box(xb-WALL+.01,xb-.01,TL-COP-.01,TL+SEATTOP,za+.01,zb-WALL-.01,M.edge,{...P,vo:TL+BASE});
     cop(xa-ov,xb+ov,TL+SEATTOP,TL+SEATTOP+COP,zb-WALL-ov,zb+ov,M.copX,{...P,uo:xa-ov,vo:zb-WALL-ov},'-z');
     cop(xb-WALL-ov,xb+ov,TL+SEATTOP,TL+SEATTOP+COP,za,zb-WALL-ov,COPZ,{...P,uo:xb-WALL-ov,vo:za},'-x');
-    // round fire pit: Granite Pisa XL ring, dark cap, lava rock, flames on the Fire switch
-    const cx=(xa+CD+xb-WALL)/2, cz=(Z1+nT-1+zb-WALL)/2, R=1.85, H=1.15;
-    const pg=new T.CylinderGeometry(R,R,H,48,1,true),uv=pg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*2*Math.PI*R,uv.getY(i)*H);
-    const pm=new T.Mesh(pg,M.xlGranite);pm.position.set(cx,TL+H/2,cz);pm.castShadow=pm.receiveShadow=true;G.add(pm);
-    const capM=new T.MeshStandardMaterial({color:0x343537,roughness:.85,side:T.DoubleSide});
-    const cap=new T.Mesh(new T.CylinderGeometry(R+.08,R+.08,.2,48,1,true),capM);cap.position.set(cx,TL+H+.1,cz);cap.castShadow=true;G.add(cap);
-    const capT=new T.Mesh(new T.RingGeometry(R-.6,R+.08,48),capM);capT.rotation.x=-Math.PI/2;capT.position.set(cx,TL+H+.2,cz);capT.receiveShadow=true;G.add(capT);
-    const inner=new T.Mesh(new T.CylinderGeometry(R-.6,R-.6,.34,40,1,true),new T.MeshStandardMaterial({color:0x2a2827,roughness:1,side:T.BackSide}));inner.position.set(cx,TL+H+.03,cz);G.add(inner);
-    const bed=new T.Mesh(new T.CircleGeometry(R-.6,40),new T.MeshStandardMaterial({color:0x1c1a19,roughness:1}));bed.rotation.x=-Math.PI/2;bed.position.set(cx,TL+H-.13,cz);G.add(bed);
-    const lava=new T.MeshStandardMaterial({color:0x3b2f2a,roughness:1});
-    for(let i=0;i<70;i++){const a=Math.random()*6.283,d=Math.sqrt(Math.random())*(R-.72),m=new T.Mesh(new T.DodecahedronGeometry(.07+Math.random()*.06,0),lava);m.position.set(cx+Math.cos(a)*d,TL+H-.1+Math.random()*.05,cz+Math.sin(a)*d);m.rotation.set(Math.random()*3,Math.random()*3,0);G.add(m);}
-    const fmap=flames[0].material.map;
-    for(let i=0;i<14;i++){const f=new T.Sprite(new T.SpriteMaterial({map:fmap,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:.75}));
-      const h=.7+Math.random()*.5,a=Math.random()*6.283,d=Math.random()*.55;f.center.set(.5,.06);f.position.set(cx+Math.cos(a)*d,TL+H-.02,cz+Math.sin(a)*d);
-      f.scale.set(h*.32,h,1);f.userData={h,ph:Math.random()*10};f.renderOrder=3;f.visible=flames[0].visible;G.add(f);flames.push(f);}
-    const pl=new T.PointLight(0xff8a3a,.35,14,2);pl.position.set(cx,TL+H+.9,cz);G.add(pl);PITL.push(pl);
+    // round fire pit
+    firePit(G,(xa+CD+xb-WALL)/2,(Z1+nT-1+zb-WALL)/2,TL);
     // off the open east side down to the lawn
     const dE=TL-g(Z1+nT+2),nE=Math.max(1,Math.ceil(dE/.6)),rE=dE/nE;
     for(let i=1;i<nE;i++){const top=TL-rE*i,x0=xa-i*TD;box(x0,xa,-6.5,top-COP,Z1+nT-.5,Z1+nT+4.5,M.riser,{...P,vo:top-COP});
@@ -960,6 +985,48 @@ const SV={straight:{3:{g:YARD[3].g,lt:[]},2:{g:YARD[2].g,lt:[]}}}, PITL=[]; let 
     slab(G,LX[0],LX[1],Z1,Z1+LZ,-2*r,'few',{inner:true});nose(L,SCX-2.5,-2*r,Z1+LZ);nose(L,SCX+2.5,-2*r,Z1+LZ);
     for(let j=1;j<=m;j++){const top=-(2+j)*r;slab(G,LX[0]-j*TD,LX[1]+j*TD,Z1,Z1+LZ+j*TD,top,'few',{cd:TD});nose(L,SCX-3,top,Z1+LZ+j*TD);nose(L,SCX+3,top,Z1+LZ+j*TD);}
     return {n:3+m,r};},
+  cakebed(G,k,L){const info=B.cake(G,k,L),r=info.r,n=info.n,w=(n-1)*TD,top=-r*(n-1)+.3,zb=Z1+w+.6;
+    // planting beds tucked against both sides of the cake: the step ends die into planting instead of dropping off
+    [[ST0-w-3.2,ST0-w],[ST1+w,ST1+w+3.2]].forEach(([xa,xb])=>pocket(G,xa,xb,Z1,zb,top,k,3));
+    return info;},
+  firecircle(G,k,L){const g=gk(k),r=YARD[k].rise,LZ=4,LV=-2*r,lx0=ST0-.5,lx1=ST1+.5;openTread(G,ST0,ST1);
+    slab(G,ST0,ST1,Z1,Z1+TD,-r,'f',{cd:TD});nose(L,SCX-1.3,-r,Z1+TD);nose(L,SCX+1.3,-r,Z1+TD);
+    slab(G,lx0,lx1,Z1,Z1+LZ,LV,'f',{inner:true});nose(L,SCX-2,LV,Z1+LZ);nose(L,SCX+2,LV,Z1+LZ);
+    const cx=27.5,cz=Z1+9,R=4.5,C=g(cz)+.12,drop=LV-C,nr=Math.max(2,Math.round(drop/.52)),rw=drop/nr,m=nr-1;
+    // a gently curving walk of paver pads, one step lower each, from the landing to the circle
+    const P0=[(lx0+lx1)/2+.8,Z1+LZ-.05],P1=[(lx0+lx1)/2+2.6,Z1+LZ+5.2],P2=[cx-R+.35,cz+.3];
+    const Bz=t=>[(1-t)*(1-t)*P0[0]+2*(1-t)*t*P1[0]+t*t*P2[0],(1-t)*(1-t)*P0[1]+2*(1-t)*t*P1[1]+t*t*P2[1]];
+    const F=[fRect(lx0,lx1,Z1,Z1+LZ,5.5,LV-.07)];
+    for(let j=1;j<=m;j++){const S=Bz((j-1)/m),E=Bz(j/m),dx=E[0]-S[0],dz=E[1]-S[1],len=Math.hypot(dx,dz),top=LV-j*rw;
+      const pg=new T.Group();pg.position.set(S[0],0,S[1]);pg.rotation.y=Math.atan2(dx,dz);G.add(pg);
+      slab(pg,-2.25,2.25,-.45,len,top,'f',{inner:true});nose(L,E[0],top,E[1]);
+      F.push(fSeg(S[0],S[1],E[0],E[1],2.25,4,top-.07));}
+    roundFloor(G,cx,cz,R,C);F.push(fCirc(cx,cz,R,4.5,C-.05));
+    firePit(G,cx,cz,C);
+    [-115,-35,35,115].forEach(a=>{const t=a*Math.PI/180,x=cx+Math.cos(t)*3.35,z=cz+Math.sin(t)*3.35;chair(G,x,C,z,Math.atan2(cx-x,cz-z));});
+    G.userData.feat=F;return {n:2+nr,r,walk:rw};},
+  bowl(G,k,L){const g=gk(k),R=5.25,cx=SCX,cz=Z1+3+R,FL=g(cz)-.15,nr=Math.max(3,Math.round(-FL/.56)),rr=-FL/nr;openTread(G,ST0,ST1);
+    const F=[];
+    for(let i=1;i<nr;i++){const top=-rr*i;slab(G,ST0,ST1,Z1,Z1+i*TD,top,'f',{cd:TD});nose(L,SCX-1.3,top,Z1+i*TD);nose(L,SCX+1.3,top,Z1+i*TD);
+      F.push(fRect(ST0,ST1,Z1+(i-1)*TD,Z1+i*TD,3.2,top-.07));}
+    roundFloor(G,cx,cz,R,FL);F.push(fCirc(cx,cz,R,5.5,FL-.05));
+    // curved seat wall around the patio side of the bowl, open where the steps come in; the lawn rolls down to it
+    const sw=(t0,t1)=>{const ro=R,ri=R-WALL,h=SEATTOP-BASE,yb=FL+BASE,len=t1-t0,uvW=(gg,rad)=>{const uv=gg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*len*rad,uv.getY(i)*h);};
+      const o=new T.CylinderGeometry(ro-.01,ro-.01,h,40,1,true,t0,len);uvW(o,ro);const om=new T.Mesh(o,M.edge);om.position.set(cx,yb+h/2,cz);om.castShadow=om.receiveShadow=true;G.add(om);
+      const ii=new T.CylinderGeometry(ri+.01,ri+.01,h,40,1,true,t0,len);uvW(ii,ri);const im=new T.Mesh(ii,new T.MeshStandardMaterial({map:M.edge.map,roughness:.9,side:T.BackSide}));im.position.copy(om.position);G.add(im);
+      const ov=(COPD-WALL)/2,cm=new T.MeshStandardMaterial({color:0x2f3032,roughness:.8,side:T.DoubleSide}),ct=FL+SEATTOP+COP;
+      const top=new T.Mesh(new T.RingGeometry(ri-ov,ro+ov,40,1,t0-Math.PI/2,len),cm);top.rotation.x=-Math.PI/2;top.position.set(cx,ct,cz);top.castShadow=true;G.add(top);
+      [ri-ov,ro+ov].forEach(rad=>{const e=new T.Mesh(new T.CylinderGeometry(rad,rad,COP,40,1,true,t0,len),cm);e.position.set(cx,ct-COP/2,cz);G.add(e);});
+      [t0,t1].forEach(t=>{const gq=new T.Group();gq.position.set(cx+Math.sin(t)*(R-WALL/2),0,cz+Math.cos(t)*(R-WALL/2));gq.rotation.y=t;G.add(gq);
+        box(-.05,.05,FL+BASE,FL+SEATTOP,-WALL/2,WALL/2,M.edge,{parent:gq,vo:FL+BASE});box(-.06,.06,FL+SEATTOP,ct,-WALL/2-ov,WALL/2+ov,cm,{parent:gq});});};
+    const gap=Math.asin(Math.min(.95,(ST1-ST0+1)/2/R)),sp=1.95;
+    sw(Math.PI+gap,Math.PI+sp);sw(Math.PI-sp,Math.PI-gap);
+    // behind the seat wall the lawn stays up near the seat top (the wall retains it); only the open front rolls down to the floor
+    F.push({t:FL+SEATTOP-.28,s:(x,z)=>{const d=Math.hypot(x-cx,z-cz);if(d<R)return 1;let th=Math.atan2(x-cx,z-cz);if(th<0)th+=2*Math.PI;
+      const ao=Math.max(0,Math.abs(th-Math.PI)-sp,gap-Math.abs(th-Math.PI));return Math.max((d-R)/4.5,ao/.45);}});
+    firePit(G,cx,cz+.6,FL);
+    [55,125].forEach(a=>{const t=a*Math.PI/180,x=cx+Math.cos(t)*3.3,z=cz+.6+Math.sin(t)*3.3;chair(G,x,FL,z,Math.atan2(cx-x,cz+.6-z));});
+    G.userData.feat=F;return {n:nr,r:rr,floorBelowLawn:(g(cz)-FL)*12};},
   wide(G,k,L){const g=gk(k),[a,b]=FWX[8],TW=1.25,[n,r]=best([3,4,5,6,7],n=>-g(Z1+(n-1)*TW)/n,.48),P={parent:G};openTread(G,a,b);
     for(let i=1;i<n;i++){const top=-r*i,z0=Z1+(i-1)*TW,z1=Z1+i*TW;box(a,b,-6.5,top-COP,z0,z1,M.riser,{...P,uo:a,vo:top-COP});
       cop(a-.03,b+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:a,vo:z0-.04},'+z');nose(L,(a+b)/2-2.2,top,z1);nose(L,(a+b)/2+2.2,top,z1);}
@@ -969,10 +1036,17 @@ const SV={straight:{3:{g:YARD[3].g,lt:[]},2:{g:YARD[2].g,lt:[]}}}, PITL=[]; let 
 // options are built the first time they're picked (keeps the page load the same as before)
 function ensureStair(v,k){if(SV[v]&&SV[v][k])return SV[v][k];const G=new T.Group(),lt=[];G.visible=false;scene.add(G);const info=STB[v](G,k,lt);
   const N=new T.Group();N.visible=false;nightGroup.add(N);NPAR=N;let zmax=Z1;lt.forEach(([x,y,z])=>{fixture(x,y,z,0.35,0.08,0.04);zmax=Math.max(zmax,z);});
-  if(zmax>Z1+5)lamp(SCX0,-1.6,(Z1+zmax)/2+1,K2700,0.9,8);NPAR=null;(SV[v]=SV[v]||{})[k]={g:G,lt,info,night:N};return SV[v][k];}
+  if(zmax>Z1+5)lamp(SCX0,-1.6,(Z1+zmax)/2+1,K2700,0.9,8);NPAR=null;(SV[v]=SV[v]||{})[k]={g:G,lt,info,night:N,feat:G.userData.feat||null};return SV[v][k];}
 function applyStair(){const k=LIFT>0?2:3;if(YSTAIR!=='straight')ensureStair(YSTAIR,k);
   Object.entries(SV).forEach(([v,o])=>[3,2].forEach(n=>{if(!o[n])return;const on=v===YSTAIR&&n===k;o[n].g.visible=on;if(o[n].night)o[n].night.visible=on;}));
-  const w=YSTAIR==='wide'?8:5;[5,8].forEach(q=>{FW[q].visible=ACC[q].visible=q===w;if(typeof NFW!=='undefined')NFW[q].visible=q===w;});}
+  const w=YSTAIR==='wide'?8:5;[5,8].forEach(q=>{FW[q].visible=ACC[q].visible=q===w;if(typeof NFW!=='undefined')NFW[q].visible=q===w;});
+  const cur=YSTAIR!=='straight'?SV[YSTAIR][k]:null, f=cur&&cur.feat||null;if(GND.feat!==f){GND.feat=f;applyGround();}}
+// reshape the lawn for the options that are set into it (fire circle, sunken bowl); otherwise the measured yard grade
+function applyGround(){const m=GND.mesh,p=m.geometry.attributes.position,F=GND.feat;
+  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i);let h=gradeA(z)-LIFT;
+    if(F&&z>Z1-8&&z<Z1+22&&x>-6&&x<44)for(const f of F){const q=f.s(x,z);if(q<1){const w=q<=0?0:q*q*(3-2*q);h=f.t+(h-f.t)*w;}}
+    p.setY(i,h+LIFT-0.03);}
+  p.needsUpdate=true;m.geometry.computeVertexNormals();m.geometry.computeBoundingSphere();}
 window.__stairInfo=()=>Object.fromEntries(Object.keys(STB).map(v=>[v,{3:ensureStair(v,3).info,2:ensureStair(v,2).info}]));
 
 // cook line on the east wall, from the walkout to the front corner: Spirit E-425, Slate 36" griddle, Ninja Woodfire on its stand
@@ -1964,9 +2038,11 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
   add(img(rc?'pxlcc':'pxlgr'),'Stair risers','Pisa XL Smooth · '+(rc?'Midnight Charcoal':'Granite'));
   add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
   add(col('#b27a47'),'Gazebo','Yardistry Meridian 12×12 · cedar');
-  if(YSTAIR==='cascade'||YSTAIR==='landcake'||YSTAIR==='terrace')add(img('gf'),YSTAIR==='terrace'?'Lower terrace':'Yard landings','Holland Premier · Granite Fusion · 45° herringbone, Endura frame');
+  if(YSTAIR==='cascade'||YSTAIR==='landcake'||YSTAIR==='terrace'||YSTAIR==='firecircle')add(img('gf'),YSTAIR==='terrace'?'Lower terrace':'Yard landings','Holland Premier · Granite Fusion · 45° herringbone, Endura frame');
+  if(YSTAIR==='firecircle'||YSTAIR==='bowl')add(img('gf'),YSTAIR==='bowl'?'Sunken bowl floor':'Walk + fire circle','Holland Premier · Granite Fusion · herringbone, charcoal ring');
+  if(YSTAIR==='firecircle'||YSTAIR==='bowl'||YSTAIR==='terrace')add(img('pxlgr'),'Fire pit','Pisa XL Smooth · Granite, round · dark cap, lava rock');
+  if(YSTAIR==='cakebed')add(img('pxlgr'),'Corner planters','Pisa XL Smooth · Granite, uncapped · black mulch, low evergreens');
   if(YSTAIR==='cascade')add(img('pxlgr'),'Planting pockets','Pisa XL Smooth · Granite, uncapped · black mulch, low evergreens');
-  if(YSTAIR==='terrace')add(img('pxlgr'),'Fire pit','Pisa XL Smooth · Granite, round · dark cap, lava rock');
   if(!toHouse)add(col('#8c877d'),'Strip along the house','River rock');
   if(P2.pw)add(col('#b27a47'),'Privacy wall · Phase 2','Yardistry Meridian privacy wall · 55" TV');
   if(P2.bed)add(img('pxlgr'),'Arborvitae bed · Phase 2','Pisa XL Smooth · Granite, uncapped · Emerald Green');
