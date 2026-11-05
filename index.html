@@ -493,11 +493,11 @@ const EDGE=3.625/12, XLC=5.875/12, COP=2.375/12, COPD=14/12;
 const SEATTOP=BASE+5*EDGE;                      // 5 Pisa Edge courses -> 16.1" above patio, + 2-3/8" coping = 18.5" seat
 const SILL=31/12;                               // slider sill 31" above the patio (4 risers of 7-3/4")
 const ST0=14, ST1=19;                           // yard stair: 14'-0" of wall, 5'-0" stair, 16'-0" of wall
-// yard grade from the contractor's site check: 21" of fall from the house to the front of the patio (19'), and in his
-// 2-step plan the patio sits ~10" above the ground at the house (~31" at the front corners). The model is built for the
-// 3-step plan, where the patio is one door riser (7-3/4") lower. The 2-step option lifts the patio by that riser; it is
-// shown by dropping the house and the yard (worldG) instead, so everything on the patio stays where it is.
-const DR=SILL/4, FALL=21/12/19, gradeA=z=>-(10/12-DR)-FALL*Math.max(z,0);
+// yard grade from the site: 21" of fall from the house to the front of the patio (contractor), and 33" measured from the
+// slider sill down to the sod right below it (at the bay face). The model is built for the 3-step plan (4 risers, sill 31"
+// above the patio, so the patio sits 2" above the ground at the door). The 2-step option lifts the patio one riser
+// (7-3/4"), shown by dropping the house and the yard (worldG) instead, so everything on the patio stays where it is.
+const DR=SILL/4, FALL=21/12/19, SILL_TO_SOD=33/12, gradeA=z=>-(SILL_TO_SOD-SILL)-FALL*(Math.max(z,0)-Z0);
 let LIFT=0; const grade=z=>gradeA(z)-LIFT;
 const ground=z=>grade(z);
 
@@ -638,7 +638,8 @@ retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBo
   box(b.min.x-e,b.max.x+e,BASE-XLC,BASE,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:accent,cast:false});});
 
 // yard stair: 5 risers of ~7-5/8" from the patio to the lawn, 12" treads, Pisa Granite risers + Endura treads
-const YARD={3:{n:5,g:new T.Group()},2:{n:6,g:new T.Group()}};
+// yard risers sized to the measured grade: 4 @ ~6" with 3 door steps, 5 @ ~6-5/8" with the patio a riser higher
+const YARD={3:{n:4,g:new T.Group()},2:{n:5,g:new T.Group()}};
 YARD[3].rise=-gradeA(Z1+YARD[3].n-1)/YARD[3].n; YARD[2].rise=(DR-gradeA(Z1+YARD[2].n-1))/YARD[2].n;
 scene.add(YARD[3].g,YARD[2].g); YARD[2].g.visible=false;
 const NR=YARD[3].n, RISE=YARD[3].rise;
@@ -1011,7 +1012,7 @@ window.__audit={
   'yard riser (in)':RISE*12,'front wall showing at the corner (in)':-grade(Z1)*12,'door steps depth into patio':2.5+22/12,
   'front wall, lawn to top of cap (in)':(-grade(Z1)+SEATTOP+COP)*12,'side wall showing at house end (in)':-grade(Z0)*12,
   'patio above grade at house (in)':-grade(0)*12,'stair foot below patio (in)':-grade(Z1+NR-1)*12,'border width (in)':B*12,
-  '2-step: door riser (in)':DR*12,'2-step: patio above grade at house (in)':(DR-gradeA(0))*12,'2-step: front wall showing (in)':(DR-gradeA(Z1))*12,
+  '2-step: door riser (in)':DR*12,'2-step: patio above grade at the door (in)':(DR-gradeA(Z0))*12,'2-step: front wall showing (in)':(DR-gradeA(Z1))*12,
   '2-step: yard risers':YARD[2].n,'2-step: yard riser (in)':YARD[2].rise*12,
 };
 
