@@ -215,6 +215,11 @@ body.closed .openbtn{display:flex}
       <button data-edge="pavers" aria-pressed="true">Pavers to the house</button>
       <button data-edge="rock">2' river rock</button>
     </div>
+    <div class="row"><label>Patio height</label></div>
+    <div class="seg" role="group" aria-label="Patio height">
+      <button data-lift="3" aria-pressed="true">3 door steps</button>
+      <button data-lift="2">2 door steps (+7¾")</button>
+    </div>
     <div class="row"><label>Door steps</label></div>
     <div class="seg" role="group" aria-label="Door steps">
       <button data-steps="straight" aria-pressed="true">Straight</button>
@@ -488,10 +493,16 @@ const EDGE=3.625/12, XLC=5.875/12, COP=2.375/12, COPD=14/12;
 const SEATTOP=BASE+5*EDGE;                      // 5 Pisa Edge courses -> 16.1" above patio, + 2-3/8" coping = 18.5" seat
 const SILL=31/12;                               // slider sill 31" above the patio (4 risers of 7-3/4")
 const ST0=14, ST1=19;                           // yard stair: 14'-0" of wall, 5'-0" stair, 16'-0" of wall
-const grade=z=>-0.483-0.1167*Math.max(z,0);     // plot-plan grades 946.1 at the house to 940.5 at the rear line (48')
+// yard grade from the contractor's site check: 21" of fall from the house to the front of the patio (19'), and in his
+// 2-step plan the patio sits ~10" above the ground at the house (~31" at the front corners). The model is built for the
+// 3-step plan, where the patio is one door riser (7-3/4") lower. The 2-step option lifts the patio by that riser; it is
+// shown by dropping the house and the yard (worldG) instead, so everything on the patio stays where it is.
+const DR=SILL/4, FALL=21/12/19, gradeA=z=>-(10/12-DR)-FALL*Math.max(z,0);
+let LIFT=0; const grade=z=>gradeA(z)-LIFT;
 const ground=z=>grade(z);
 
 // ground
+const _w0=scene.children.length;
 (function(){const g=new T.PlaneGeometry(260,220,1,220);g.rotateX(-Math.PI/2);g.translate(17.5,0,60);
  const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setY(i,ground(p.getZ(i))-0.03);g.computeVertexNormals();
  const m=new T.Mesh(g,M.grass);m.receiveShadow=true;scene.add(m);})();
@@ -514,6 +525,8 @@ box(BAYC-3.25,BAYC-3,SILL,SILL+6.7,Z0-.15,Z0+.07,M.trim);box(BAYC+3,BAYC+3.25,SI
 // windows: placeholders only (send a photo of the back of the house to match them)
 [[0.5,4],...[0.25,0.5,0.75].map(f=>{const c=BAY1+(HX1-BAY1)*f;return [c-1.5,c+1.5];})].forEach(([a,b])=>{box(a,b,SILL+2.3,SILL+6.7,-0.2,0.04,M.glass);box(a-.2,b+.2,SILL+2.1,SILL+2.3,-0.2,0.12,M.trim);});
 [[0.5,4],[BAYC-1.75,BAYC+1.75],[27,30.5]].forEach(([a,b])=>{box(a,b,13.2,17.4,-0.2,0.04,M.glass);box(a-.2,b+.2,13,13.2,-0.2,0.12,M.trim);});
+// the ground and the house move together when the patio height option changes
+const worldG=new T.Group(); scene.add(worldG); scene.children.slice(_w0,scene.children.length-1).forEach(o=>worldG.attach(o));
 
 // 2' river-rock strip along the house, corner to corner, filled up flush with the patio (top ~3/8" below the pavers so
 // stones don't roll onto the patio). Past the patio ends it sits ~7-9" above the side-yard grade, so a low Granite
@@ -588,6 +601,9 @@ seatRun(0,WALL,5,Z1,{e:(COPD-WALL)/2,from:'end'}); seatRun(PW-WALL,PW,5,Z1,{e:(C
 [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>cop(a-.08,b+.08,BASE,BASE+COP,Z0,5,COPZ,{uo:a,vo:Z0},a<1?'-x':'+x'));
 // cap-stone steps out each walkout (one riser down to the side yard)
 [[-1.17,0],[PW,PW+1.17]].forEach(([a,b])=>{box(a,b,-3,-0.68,Z0,5,M.riser,{vo:-0.68});cop(a-.04,b+.04,-0.68,-0.68+COP,Z0,5,COPZ,{uo:a,vo:Z0},a<0?'-x':'+x');});
+// with the patio lifted a riser (2 door steps) the side yard is that much lower, so each walkout gets a second cap step
+const walkB=new T.Group(); walkB.visible=false; scene.add(walkB);
+[[-2.34,-1.17],[PW+1.17,PW+2.34]].forEach(([a,b])=>{const t=-0.68-DR*0.72;box(a,b,-3.5,t,Z0,5,M.riser,{vo:t,parent:walkB});cop(a-.04,b+.04,t,t+COP,Z0,5,COPZ,{uo:a,vo:Z0,parent:walkB},a<0?'-x':'+x');});
 // front wall: 12'-0" + 2' pier + 5' stair + 2' pier + 14'-0"
 retainRun(WALL,ST0-2,Z1-WALL,Z1,{pz:1}); retainRun(ST1+2,PW-WALL,Z1-WALL,Z1,{pz:1});
 seatRun(WALL,ST0-2,Z1-WALL,Z1,{s:-(COPD-WALL)/2,from:'start'}); seatRun(ST1+2,PW-WALL,Z1-WALL,Z1,{e:-(COPD-WALL)/2,from:'end'});
@@ -622,18 +638,23 @@ retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBo
   box(b.min.x-e,b.max.x+e,BASE-XLC,BASE,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:accent,cast:false});});
 
 // yard stair: 5 risers of ~7-5/8" from the patio to the lawn, 12" treads, Pisa Granite risers + Endura treads
-const NR=5, RISE=-grade(Z1+4)/NR;
+const YARD={3:{n:5,g:new T.Group()},2:{n:6,g:new T.Group()}};
+YARD[3].rise=-gradeA(Z1+YARD[3].n-1)/YARD[3].n; YARD[2].rise=(DR-gradeA(Z1+YARD[2].n-1))/YARD[2].n;
+scene.add(YARD[3].g,YARD[2].g); YARD[2].g.visible=false;
+const NR=YARD[3].n, RISE=YARD[3].rise;
 // treads: one piece deep (no seam across the step), joints centred on the stair so each tread is a full 24" unit in the
 // middle with an equal cut at each end, lined up step to step; riser joints centred the same way
-(function(){const SC=(ST0+ST1)/2, tu=SC-23.625/24, ru=SC-15.75/24;
- const tread=(top,z0,z1)=>cop(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{uo:tu,vo:z0-.04},'+z');
- box(ST0,ST1,-4,-COP,Z1-WALL,Z1,M.riser,{uo:ru,vo:-COP}); tread(0,Z1-WALL,Z1);
- for(let i=1;i<NR;i++){const top=-RISE*i, z0=Z1+(i-1), z1=Z1+i;
-   box(ST0,ST1,-5,top-COP,z0,z1,M.riser,{uo:ru,vo:top-COP}); tread(top,z0,z1);}})();
+[3,2].forEach(k=>{const SC=(ST0+ST1)/2, tu=SC-23.625/24, ru=SC-15.75/24, n=YARD[k].n, rise=YARD[k].rise, P={parent:YARD[k].g};
+ const tread=(top,z0,z1)=>cop(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:tu,vo:z0-.04},'+z');
+ box(ST0,ST1,-4,-COP,Z1-WALL,Z1,M.riser,{...P,uo:ru,vo:-COP}); tread(0,Z1-WALL,Z1);
+ for(let i=1;i<n;i++){const top=-rise*i, z0=Z1+(i-1), z1=Z1+i;
+   box(ST0,ST1,-5.5,top-COP,z0,z1,M.riser,{...P,uo:ru,vo:top-COP}); tread(top,z0,z1);}});
 
 // 45-degree herringbone of Unilock Holland Premier (3-7/8" x 7-7/8"), Granite Fusion, drawn to fit one panel exactly
 // (w x d inches); chevrons point toward the door. Each paver gets its own patch of the field-paver photo plus a slight tint.
-function herringbone(w,d){const P=10,W=3.94,L=7.88,c=document.createElement('canvas');c.width=Math.round(w*P);c.height=Math.round(d*P);
+const HB_CACHE={};
+function herringbone(w,d){const hk=Math.round(w)+'x'+Math.round(d);return HB_CACHE[hk]||(HB_CACHE[hk]=herringbone0(w,d));}
+function herringbone0(w,d){const P=10,W=3.94,L=7.88,c=document.createElement('canvas');c.width=Math.round(w*P);c.height=Math.round(d*P);
   const g=c.getContext('2d');g.fillStyle='#8d8b86';g.fillRect(0,0,c.width,c.height);
   const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;t.anisotropy=8;t.repeat.set(12/w,12/d);
   const img=new Image();img.onload=()=>{const r2=Math.SQRT1_2,X=(u,v)=>((u-v)*r2+w/2)*P,Y=(u,v)=>((u+v)*r2)*P;
@@ -661,13 +682,16 @@ function herringbone(w,d){const P=10,W=3.94,L=7.88,c=document.createElement('can
 //                 walked down three ways; each tier grows 11" on each side (bottom tier 13'-8" wide)
 const stepsS=new T.Group(), stepsW=new T.Group(); scene.add(stepsS,stepsW); stepsW.visible=false;
 const phS=new T.Group(), phW=new T.Group(); pavHouse.add(phS,phW); phW.visible=false;
+// patio height option: 3 door steps (landing + 2 treads, 4 risers) or 2 (landing + 1 tread, 3 risers, patio one riser higher)
+const STEPG={}; [3,2].forEach(n=>{const o=STEPG[n]={S:new T.Group(),W:new T.Group(),pS:new T.Group(),pW:new T.Group()};
+  stepsS.add(o.S);stepsW.add(o.W);phS.add(o.pS);phW.add(o.pW);if(n===2)o.S.visible=o.W.visible=o.pS.visible=o.pW.visible=false;});
 const CAKE_LW=7;   // wedding-cake landing: 7'-0" wide, centred on the 6' slider (6" past the door on each side)
-(function(){const r=SILL/4, TD=11/12, CU=23.625/12;
+[3,2].forEach(NS=>{const r=DR, TD=11/12, CU=23.625/12, NT=NS-1, SL=(NT+2)*r, gS=STEPG[NS].S, gW=STEPG[NS].W;
  // coping joints: centre a joint or a full unit on the steps, whichever leaves the bigger end cuts
  const uoFor=w=>{const cutJ=((w/2)%CU), cutU=(((w-CU)/2)%CU);return cutJ>=cutU?BAYC:BAYC-CU/2;};
  // 30" landing framed in coping (full nosing course across the front, a piece turned front-to-back at each end)
  // around a 45-degree herringbone of Holland Premier in Granite Fusion
- function landing(G,xa,xb){const z0=Z0,z1=Z0+2.5,top=SILL-r,P={parent:G};
+ function landing(G,xa,xb){const z0=Z0,z1=Z0+2.5,top=SL-r,P={parent:G};
    box(xa,xb,-0.6,top-COP,z0,z1,M.riser,{...P,uo:BAYC-15.75/24,vo:top-COP});
    const CD=14/12, x0=xa-.03, x1=xb+.03, zf=z1+.06-CD;
    cop(x0,x1,top-COP,top,zf,z1+.06,M.copX,{...P,uo:uoFor(x1-x0),vo:zf-.02},'+z');
@@ -675,32 +699,32 @@ const CAKE_LW=7;   // wedding-cake landing: 7'-0" wide, centred on the 6' slider
    cop(x1-CD,x1,top-COP,top,z0,zf,COPZ,{...P,uo:x1-CD,vo:zf},'+x');
    box(x0+CD,x1-CD,top-COP,top-.002,z0,zf,herringbone((x1-x0-2*CD)*12,(zf-z0)*12),{...P,uo:x0+CD,vo:z0});}
  // straight: full 10' bay width, two 11" treads across the front
- landing(stepsS,BAY0,BAY1);
- [1,2].forEach(k=>{const top=SILL-(k+1)*r, z0=Z0+2.5+(k-1)*TD, z1=z0+TD, P={parent:stepsS};
+ landing(gS,BAY0,BAY1);
+ for(let k=1;k<=NT;k++){const top=SL-(k+1)*r, z0=Z0+2.5+(k-1)*TD, z1=z0+TD, P={parent:gS};
    box(BAY0,BAY1,-0.6,top-COP,z0,z1,M.riser,{...P,uo:BAYC-15.75/24,vo:top-COP});
-   cop(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:uoFor(BAY1-BAY0+.06),vo:z0-.04},'+z');});
+   cop(BAY0-.03,BAY1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:uoFor(BAY1-BAY0+.06),vo:z0-.04},'+z');}
  // wedding cake: narrower landing, each tread below wraps both sides and the front; front run carries the corners,
  // side runs turned front-to-back and counted from the corner
- const la=BAYC-CAKE_LW/2, lb=BAYC+CAKE_LW/2; landing(stepsW,la,lb);
- [1,2].forEach(k=>{const top=SILL-(k+1)*r, xa=la-k*TD, xb=lb+k*TD, zf=Z0+2.5+k*TD, zb=zf-TD, P={parent:stepsW};
+ const la=BAYC-CAKE_LW/2, lb=BAYC+CAKE_LW/2; landing(gW,la,lb);
+ for(let k=1;k<=NT;k++){const top=SL-(k+1)*r, xa=la-k*TD, xb=lb+k*TD, zf=Z0+2.5+k*TD, zb=zf-TD, P={parent:gW};
    box(xa,xb,-0.6,top-COP,Z0,zf,M.riser,{...P,uo:BAYC-15.75/24,vo:top-COP});
    cop(xa-.03,xb+.03,top-COP,top,zb,zf+.06,M.copX,{...P,uo:uoFor(xb-xa+.06),vo:zb-.04},'+z');
    cop(xa-.03,xa+TD,top-COP,top,Z0,zb,COPZ,{...P,uo:xa-.03,vo:zb},'-x');
-   cop(xb-TD,xb+.03,top-COP,top,Z0,zb,COPZ,{...P,uo:xb-TD,vo:zb},'+x');});})();
+   cop(xb-TD,xb+.03,top-COP,top,Z0,zb,COPZ,{...P,uo:xb-TD,vo:zb},'+x');}});
 
 // the patio border wraps the door steps: a soldier course up each side and across the front of the bottom riser,
 // so the steps sit in a dark frame like the rest of the patio edges (corners carried by the front run)
-(function(){const zF=Z0+2.5+22/12, ca=BAYC-CAKE_LW/2-22/12, cb=BAYC+CAKE_LW/2+22/12;
- [[stepsS,phS,BAY0,BAY1],[stepsW,phW,ca,cb]].forEach(([G,PHG,a,b])=>{const P={cast:false,parent:G}, PH={cast:false,parent:PHG};
+[3,2].forEach(NS=>{const TT=(NS-1)*11/12, zF=Z0+2.5+TT, ca=BAYC-CAKE_LW/2-TT, cb=BAYC+CAKE_LW/2+TT, o=STEPG[NS];
+ [[o.S,o.pS,BAY0,BAY1],[o.W,o.pW,ca,cb]].forEach(([G,PHG,a,b])=>{const P={cast:false,parent:G}, PH={cast:false,parent:PHG};
    box(a-B,a,-0.6,0.02,Z0+B,zF,M.borderZ,{...P,uo:a-B,vo:Z0+B});
    box(b,b+B,-0.6,0.02,Z0+B,zF,M.borderZ,{...P,uo:b,vo:Z0+B});
    box(a-B,b+B,-0.6,0.02,zF,zF+B,M.borderX,{...P,uo:a-B,vo:zF});
    // with pavers to the house the strip along the rock is gone, so the side runs continue back: straight steps to the
    // bay face (the bay-hugging border takes over); wedding cake back past the bay corner to the house border, widened
    // to meet the bay side so no sliver of field is left behind the steps
-   if(G===stepsS){box(a-B,a,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:a-B,vo:Z0});box(b,b+B,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:b,vo:Z0});}
+   if(G===o.S){box(a-B,a,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:a-B,vo:Z0});box(b,b+B,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:b,vo:Z0});}
    else{box(a-B,a,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:a-B,vo:Z0});box(b,b+B,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:b,vo:Z0});
-     box(a-B,Math.max(a,BAY0),-0.6,0.02,B,Z0,M.borderZ,{...PH,uo:a-B,vo:B});box(Math.min(b,BAY1),b+B,-0.6,0.02,B,Z0,M.borderZ,{...PH,uo:Math.min(b,BAY1),vo:B});}});})();
+     box(a-B,Math.max(a,BAY0),-0.6,0.02,B,Z0,M.borderZ,{...PH,uo:a-B,vo:B});box(Math.min(b,BAY1),b+B,-0.6,0.02,B,Z0,M.borderZ,{...PH,uo:Math.min(b,BAY1),vo:B});}});});
 function setSteps(m){const cake=m==='cake';stepsS.visible=phS.visible=!cake;stepsW.visible=phW.visible=cake;BAYHUG.forEach(o=>o.visible=!cake);}
 // Yardistry Meridian 12x12 (YM11769): posts 12" off the west and front seat walls.
 // Yardistry lists the base at 11'-6" outside / 9'-10 1/2" inside, i.e. 10" post bases on 10'-8 1/2" centres
@@ -986,7 +1010,9 @@ window.__audit={
   'seat height (in)':(SEATTOP+COP)*12,'pier above patio (in)':(PIERTOP+PCAP)*12,'door riser (in)':SILL/4*12,
   'yard riser (in)':RISE*12,'front wall showing at the corner (in)':-grade(Z1)*12,'door steps depth into patio':2.5+22/12,
   'front wall, lawn to top of cap (in)':(-grade(Z1)+SEATTOP+COP)*12,'side wall showing at house end (in)':-grade(Z0)*12,
-  'patio above grade at house (in)':-grade(0)*12,'stair foot below patio (in)':-grade(Z1+4)*12,'border width (in)':B*12,
+  'patio above grade at house (in)':-grade(0)*12,'stair foot below patio (in)':-grade(Z1+NR-1)*12,'border width (in)':B*12,
+  '2-step: door riser (in)':DR*12,'2-step: patio above grade at house (in)':(DR-gradeA(0))*12,'2-step: front wall showing (in)':(DR-gradeA(Z1))*12,
+  '2-step: yard risers':YARD[2].n,'2-step: yard riser (in)':YARD[2].rise*12,
 };
 
 // ---- views
@@ -1097,6 +1123,16 @@ $$('[data-umb]').forEach(b=>b.addEventListener('click',()=>{setUmb(b.dataset.umb
 sw('t-fire',on=>{flames.forEach(f=>f.visible=on);fireLight.visible=on;});
 $$('[data-steps]').forEach(b=>b.addEventListener('click',()=>{setSteps(b.dataset.steps);press('[data-steps]',b);}));
 window.__steps=k=>{setSteps(k);press('[data-steps]',document.querySelector(`[data-steps="${k}"]`));};
+// patio height: 3 door steps (as drawn) or 2 door steps with the patio one riser (7-3/4") higher and one more yard step.
+// The patio stays put; the house, lawn and neighbor drop by the riser, and the step sets swap.
+function setLift(n){n=+n;const was=LIFT;LIFT=n===2?DR:0;const d=LIFT-was;worldG.position.y=-LIFT;
+  [3,2].forEach(k=>{const on=k===n,o=STEPG[k];o.S.visible=o.W.visible=o.pS.visible=o.pW.visible=on;YARD[k].g.visible=on;NL[k].visible=on;});
+  walkB.visible=n===2; doorLamp.position.y=SILL+4-LIFT;
+  ['yard','stairs','east','west'].forEach(k=>V[k].p[1]=eye(V[k].p[2])); V.door.p[1]=SILL-LIFT-DR+EYE; if(V.neighbor)V.neighbor.p[1]=ground(27)+7.1;
+  // standing in the yard, you stay on the lawn (it just dropped); on the patio or the steps you stay where you are
+  if(d&&mode==='eye'){const c=camera.position;if(c.z>Z1+0.3||c.x<-0.2||c.x>PW+0.2||c.z<0)c.y-=d;}}
+$$('[data-lift]').forEach(b=>b.addEventListener('click',()=>{setLift(b.dataset.lift);press('[data-lift]',b);}));
+window.__lift=k=>{setLift(k);press('[data-lift]',document.querySelector(`[data-lift="${k}"]`));};
 $$('[data-riser]').forEach(b=>b.addEventListener('click',()=>{setRiser(b.dataset.riser);press('[data-riser]',b);}));
 window.__riser=k=>{setRiser(k);press('[data-riser]',document.querySelector(`[data-riser="${k}"]`));};
 const accSwitch=sw('t-accent',on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;});
@@ -1130,8 +1166,9 @@ window.__pw=on=>{P2.pw=on;applyP2();};
 // ---- landscape lighting: 3000K hardscape + 2700K step lights from the electrical sheet
 const nightGroup=new T.Group(); nightGroup.visible=false; scene.add(nightGroup);
 const glowMat=new T.MeshBasicMaterial({color:0xffd9a8});
-function fixture(x,y,z,w,h,d){const m=new T.Mesh(new T.BoxGeometry(w,h,d),glowMat);m.position.set(x,y,z);nightGroup.add(m);}
-function lamp(x,y,z,c,intensity,dist){const l=new T.PointLight(c,intensity,dist,2);l.position.set(x,y,z);nightGroup.add(l);}
+let NPAR=null;   // when set, new fixtures go into this sub-group of the night lighting (per patio-height option)
+function fixture(x,y,z,w,h,d){const m=new T.Mesh(new T.BoxGeometry(w,h,d),glowMat);m.position.set(x,y,z);(NPAR||nightGroup).add(m);}
+function lamp(x,y,z,c,intensity,dist){const l=new T.PointLight(c,intensity,dist,2);l.position.set(x,y,z);nightGroup.add(l);return l;}
 const K3000=0xffc58f, K2700=0xffb46b, capY=SEATTOP-0.06;
 [2.2,5.2,8.2,11.0, 23.2,26.6,30.0,33.0].forEach(x=>{fixture(x,capY,Z1+0.04,0.5,0.06,0.08);lamp(x,0.2,Z1+0.7,K3000,1.1,7);});
 [3.2,6.6,10.0,24.5,28.5,32.4].forEach(x=>{fixture(x,capY,Z1-WALL-0.04,0.5,0.06,0.08);lamp(x,0.9,Z1-WALL-0.7,K3000,0.6,6);});
@@ -1141,12 +1178,13 @@ fixture(WALL+0.04,capY,5.4,0.08,0.06,0.5); lamp(WALL+0.7,0.9,5.4,K3000,0.5,5);
 [[ST0-2,ST0,1],[ST1,ST1+2,-1]].forEach(([a,b,sd])=>{const cx=(a+b)/2, sx=sd>0?b:a;
   fixture(cx,PIERTOP-0.05,Z1+0.5+0.04,0.5,0.06,0.08); lamp(cx,PIERTOP-0.6,Z1+1.1,K3000,0.9,6);
   fixture(sx+sd*0.04,PIERTOP-0.05,Z1-0.5,0.08,0.06,0.5); lamp(sx+sd*0.6,PIERTOP-0.6,Z1-0.5,K3000,0.6,5);});
-for(let i=0;i<NR;i++){const top=-RISE*i, z=Z1+i+0.01;[ST0+1.1,ST1-1.1].forEach(x=>fixture(x,top-COP-0.22,z,0.35,0.08,0.04));}
+const NL={3:new T.Group(),2:new T.Group()}; nightGroup.add(NL[3],NL[2]); NL[2].visible=false;
+[3,2].forEach(k=>{NPAR=NL[k];for(let i=0;i<YARD[k].n;i++){const top=-YARD[k].rise*i, z=Z1+i+0.01;[ST0+1.1,ST1-1.1].forEach(x=>fixture(x,top-COP-0.22,z,0.35,0.08,0.04));}
+ for(let t=1;t<k+1;t++)[BAY0+1.5,BAY1-1.5].forEach(x=>fixture(x,(k+1-t)*DR-COP-0.22,Z0+2.5+(t-1)*11/12+0.07,0.35,0.08,0.04));});NPAR=null;
 lamp((ST0+ST1)/2,-0.6,Z1+1.6,K2700,1.0,6); lamp((ST0+ST1)/2,-2.0,Z1+3.6,K2700,1.0,6);
-(function(){const dr=SILL/4;[[Z0+2.5,SILL-dr],[Z0+2.5+11/12,SILL-2*dr],[Z0+2.5+22/12,SILL-3*dr]].forEach(([z,top])=>[BAY0+1.5,BAY1-1.5].forEach(x=>fixture(x,top-COP-0.22,z+0.07,0.35,0.08,0.04)));
- lamp(BAYC,1.2,Z0+5.2,K2700,0.9,7);})();
+lamp(BAYC,1.2,Z0+5.2,K2700,0.9,7);
 fixture(GCX,GH-0.15,GCZ,0.9,0.12,0.9); lamp(GCX,GH-0.6,GCZ,K2700,1.2,11);
-lamp(BAYC,SILL+4,Z0+1.2,K2700,0.5,7);
+const doorLamp=lamp(BAYC,SILL+4,Z0+1.2,K2700,0.5,7);
 // ---- phase 2 (spring): raised arborvitae bed in the 4' strip east of the patio (sheet A9)
 // Granite Pisa XL walls on three sides (house end, east side, front return), uncapped. The courses run on the same
 // grid as the patio's retaining wall, so the front reads as one continuous wall and the accent course wraps through;
@@ -1281,9 +1319,13 @@ function dim(a,b,text,sub,when){const line=dimLine(a,b,dimMat,dimGroup);const el
  dim([-.5,capT+.1,Z0],[-.5,capT+.1,Z1],ftin(Z1-Z0),'patio depth',()=>!toHouse);
  dim([HX0,.4,-.25],[0,.4,-.25],ftin(-HX0),'in from corner'); dim([PW,.4,-.25],[HX1,.4,-.25],ftin(HX1-PW),'');
  // walls
- dim([PW+.55,grade(Z1),Z1+.3],[PW+.55,capT,Z1+.3],ftin(capT-grade(Z1)),'wall, lawn to cap');
+ [3,2].forEach(k=>{const L=k===2?DR:0, w=()=>(LIFT>0)===(k===2), g=z=>gradeA(z)-L, n=YARD[k].n;
+   dim([PW+.55,g(Z1),Z1+.3],[PW+.55,capT,Z1+.3],ftin(capT-g(Z1)),'wall, lawn to cap',w);
+   dim([PW+1.6,g(Z1),Z1+.3],[PW+1.6,0,Z1+.3],ftin(-g(Z1)),'patio above lawn',w);
+   dim([ST0,g(Z1+n)+.1,Z1+n],[ST1,g(Z1+n)+.1,Z1+n],ftin(ST1-ST0),`stair · ${n} risers @ ${ftin(YARD[k].rise)}`,w);
+   dim([BAY0-.45,0,Z0+.1],[BAY0-.45,SILL-L,Z0+.1],ftin(SILL-L),`door sill above patio · ${k} steps`,w);
+   dim([BAY1+.4,yl,Z0],[BAY1+.4,yl,Z0+2.5+(k-1)*11/12],ftin(2.5+(k-1)*11/12),'door steps',w);});
  dim([11,0,Z1-WALL-.25],[11,capT,Z1-WALL-.25],ftin(capT),'seat wall');
- dim([ST0,grade(Z1+NR)+.1,Z1+NR],[ST1,grade(Z1+NR)+.1,Z1+NR],ftin(ST1-ST0),`stair · ${NR} risers @ ${ftin(RISE)}`);
  // gazebo
  dim([GXo[0],yl,GZo[0]-.35],[GXo[1],yl,GZo[0]-.35],ftin(GXo[1]-GXo[0]),'posts, outside');
  dim([GCX-ROOF/2,GH+1.1,GCZ-ROOF/2-.1],[GCX+ROOF/2,GH+1.1,GCZ-ROOF/2-.1],ftin(ROOF),'roof');
@@ -1295,7 +1337,6 @@ function dim(a,b,text,sub,when){const line=dimLine(a,b,dimMat,dimGroup);const el
  dim([GCX-3,yl,Z0],[GCX-3,yl,GCZ-ROOF/2],ftin(GCZ-ROOF/2-Z0),'rock to roof edge',()=>!toHouse);
  dim([WALL+COOKD,yl,TCZ-1],[TCX-TW/2-CHD,yl,TCZ-1],ftin(TCX-TW/2-CHD-WALL-COOKD),'aisle',diningHome);
  dim([TCX+TW/2+CHD,yl,TCZ+1],[GCX-ROOF/2,yl,TCZ+1],ftin(GCX-ROOF/2-TCX-TW/2-CHD),'to gazebo',diningHome);
- dim([BAY1+.4,yl,Z0],[BAY1+.4,yl,Z0+2.5+22/12],ftin(2.5+22/12),'door steps');
  dim([TCX-TW/2,29/12+.15,TCZ+TL/2+.35],[TCX+TW/2,29/12+.15,TCZ+TL/2+.35],ftin(TW),'× '+ftin(TL)+' table',diningHome);
  // phase 2
  dim([HX0,.6,11],[0,.6,11],ftin(-HX0),'arb bed',()=>P2.bed);
@@ -1358,7 +1399,7 @@ function dimTick(){const w=stage.clientWidth,h=stage.clientHeight,placed=[];
 // ---- easter egg: click any view button three times quickly to unlock "Neighbor" -- the east neighbor up on a
 // stepladder behind their privacy fence, binoculars trained on your TV and fire table
 V.neighbor={p:[-12.6,ground(27)+7.1,27.5],t:[26,2.6,11.5]};
-const nbr=new T.Group(); nbr.visible=false; scene.add(nbr);
+const nbr=new T.Group(); nbr.visible=false; worldG.add(nbr);
 (function(){const wood=new T.MeshStandardMaterial({color:0x8a6a4a,roughness:.95}), dark=new T.MeshStandardMaterial({color:0x6e5238,roughness:.95});
  const x=-11.2;
  for(let z=14;z<42;z+=0.47){const g=ground(z+.22),b=new T.Mesh(new T.BoxGeometry(.08,6,.44),Math.random()<.3?dark:wood);b.position.set(x,g+3.0,z+.22);b.castShadow=true;nbr.add(b);}
@@ -1820,7 +1861,7 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
  return {refresh,areas};})();
 window.__legend=()=>{LEG.refresh();return {rows:[...document.querySelectorAll('#lgList .lgr b')].map(b=>b.textContent),area:document.getElementById('lgArea').innerText,a:LEG.areas()};};
 const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person','t-legend'];
-const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps'];
+const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps','lift'];
 const r2=v=>Math.round(v*100)/100;
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const dec=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
