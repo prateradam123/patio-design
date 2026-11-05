@@ -37,6 +37,7 @@ button[aria-pressed="true"]{background:var(--on);color:var(--onink);border-color
 button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .seg{display:flex;background:var(--soft);border-radius:5px;padding:3px;gap:3px}
 .seg button{flex:1;text-align:center;border:0;padding:6px 4px;font-size:12.5px}
+.seg.wrap{flex-wrap:wrap}.seg.wrap button{flex:1 0 30%}
 .seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.18)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .row label{font-size:13.5px}
@@ -219,6 +220,15 @@ body.closed .openbtn{display:flex}
     <div class="seg" role="group" aria-label="Patio height">
       <button data-lift="3" aria-pressed="true">3 door steps</button>
       <button data-lift="2">2 door steps (+7¾")</button>
+    </div>
+    <div class="row"><label>Yard stairs</label></div>
+    <div class="seg wrap" role="group" aria-label="Yard stairs">
+      <button data-ystair="straight" aria-pressed="true">Straight 5'</button>
+      <button data-ystair="cake">Wedding cake</button>
+      <button data-ystair="cascade">Cascade</button>
+      <button data-ystair="terrace">Fire-pit terrace</button>
+      <button data-ystair="landcake">Landing + cake</button>
+      <button data-ystair="wide">Wide 8'</button>
     </div>
     <div class="row"><label>Door steps</label></div>
     <div class="seg" role="group" aria-label="Door steps">
@@ -589,12 +599,12 @@ function retainRun(x0,x1,z0,z1,o={}){const top=o.top==null?BASE:o.top,mat=o.mat|
 // coping is laid from the outside corners: the side-wall run carries a full unit around the corner (out to the front
 // overhang), the front run butts into it, and the joints count off in 24" units from that corner so any cut piece lands
 // at the stair pier or the walkout end, not at the corner. c = {s:extend start, e:extend end, from:'start'|'end'}
-function seatRun(x0,x1,z0,z1,c={}){box(x0+0.01,x1-0.01,BASE,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE});
+function seatRun(x0,x1,z0,z1,c={}){const PP=c.parent?{parent:c.parent}:{};box(x0+0.01,x1-0.01,BASE,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE,...PP});
   const alongX=(x1-x0)>(z1-z0), ov=(COPD-WALL)/2, ox=alongX?0:ov, oz=alongX?ov:0, s0=c.s||0, s1=c.e||0;
   const a0=(alongX?x0:z0)-s0, a1=(alongX?x1:z1)+s1, org=c.from==='end'?a1:a0;
   // rounded edge toward the seating (patio) side; side runs stay square where the front run butts in at the corner
-  if(alongX)cop(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz},'-z');
-  else cop(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org},x0<1?'+x':'-x',[a0,Z1-WALL-(COPD-WALL)/2]);}
+  if(alongX)cop(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz,...PP},'-z');
+  else cop(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org,...PP},x0<1?'+x':'-x',[a0,Z1-WALL-(COPD-WALL)/2]);}
 // side walls: retaining the full length; seat walls stop 3' short of the rock strip for the walkouts
 retainRun(0,WALL,Z0,Z1,{nx:1,pz:1}); retainRun(PW-WALL,PW,Z0,Z1,{px:1,pz:1});
 seatRun(0,WALL,5,Z1,{e:(COPD-WALL)/2,from:'end'}); seatRun(PW-WALL,PW,5,Z1,{e:(COPD-WALL)/2,from:'end'});
@@ -605,24 +615,28 @@ seatRun(0,WALL,5,Z1,{e:(COPD-WALL)/2,from:'end'}); seatRun(PW-WALL,PW,5,Z1,{e:(C
 const walkB=new T.Group(); walkB.visible=false; scene.add(walkB);
 [[-2.34,-1.17],[PW+1.17,PW+2.34]].forEach(([a,b])=>{const t=-0.68-DR*0.72;box(a,b,-3.5,t,Z0,5,M.riser,{vo:t,parent:walkB});cop(a-.04,b+.04,t,t+COP,Z0,5,COPZ,{uo:a,vo:Z0,parent:walkB},a<0?'-x':'+x');});
 // front wall: 12'-0" + 2' pier + 5' stair + 2' pier + 14'-0"
-retainRun(WALL,ST0-2,Z1-WALL,Z1,{pz:1}); retainRun(ST1+2,PW-WALL,Z1-WALL,Z1,{pz:1});
-seatRun(WALL,ST0-2,Z1-WALL,Z1,{s:-(COPD-WALL)/2,from:'start'}); seatRun(ST1+2,PW-WALL,Z1-WALL,Z1,{e:-(COPD-WALL)/2,from:'end'});
+// FW[5] is the drawn 5' stair opening; FW[8] opens it to 8' (2' piers move out 1'-6" each side) for the wide garden stair option
+const FW={5:new T.Group(),8:new T.Group()}, FWX={5:[ST0,ST1],8:[ST0-1.5,ST1+1.5]}; scene.add(FW[5],FW[8]); FW[8].visible=false;
+[5,8].forEach(k=>{const [a,b]=FWX[k],G=FW[k];
+ [retainRun(WALL,a-2,Z1-WALL,Z1,{pz:1,parent:G}),retainRun(b+2,PW-WALL,Z1-WALL,Z1,{pz:1,parent:G})].forEach(m=>m.userData.fw=k);
+ seatRun(WALL,a-2,Z1-WALL,Z1,{s:-(COPD-WALL)/2,from:'start',parent:G}); seatRun(b+2,PW-WALL,Z1-WALL,Z1,{e:-(COPD-WALL)/2,from:'end',parent:G});});
 // 2'x2' piers, projecting 6" past both wall faces: 4 Pisa courses + cap = 24" above the patio
 const PIERTOP=BASE+4*XLC, PCAP=3.875/12, PCAPW=29.125/12;
 // Unilock Ledgestone pillar cap (29-1/8" x 29-1/8" x 3-7/8"), one piece, dark, with the pitched edges Ledgestone is cast with
 M.ledge=new T.MeshStandardMaterial({map:tex('endc',1.6),color:0xb4b4b4,roughness:.95});
-function pillarCap(cx,cz){const h=PCAPW/2, sh=new T.Shape();sh.moveTo(-h+.06,-h+.06);sh.lineTo(h-.06,-h+.06);sh.lineTo(h-.06,h-.06);sh.lineTo(-h+.06,h-.06);
+function pillarCap(cx,cz,PG){const h=PCAPW/2, sh=new T.Shape();sh.moveTo(-h+.06,-h+.06);sh.lineTo(h-.06,-h+.06);sh.lineTo(h-.06,h-.06);sh.lineTo(-h+.06,h-.06);
   const g=new T.ExtrudeGeometry(sh,{depth:PCAP-.07,bevelEnabled:true,bevelThickness:.035,bevelSize:.06,bevelSegments:2,curveSegments:1});
   g.rotateX(-Math.PI/2);g.translate(cx,PIERTOP+.035,cz);
   const p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;   // world-scaled UVs like box()
   g.computeVertexNormals();for(let i=0;i<p.count;i++){const ny=Math.abs(n.getY(i)),nx=Math.abs(n.getX(i));
     if(ny>.7)uv.setXY(i,p.getX(i),p.getZ(i));else if(nx>.5)uv.setXY(i,p.getZ(i),p.getY(i));else uv.setXY(i,p.getX(i),p.getY(i));}
-  const m=new T.Mesh(g,M.ledge);m.castShadow=m.receiveShadow=true;scene.add(m);return m;}
-[[ST0-2,ST0],[ST1,ST1+2]].forEach(([a,b])=>{retain.push(box(a,b,-7,PIERTOP,Z1-1.5,Z1+.5,M.xlGranite,{vo:BASE}));
-  pillarCap((a+b)/2,Z1-.5);});
+  const m=new T.Mesh(g,M.ledge);m.castShadow=m.receiveShadow=true;(PG||scene).add(m);return m;}
+[5,8].forEach(k=>{const [s0,s1]=FWX[k];[[s0-2,s0],[s1,s1+2]].forEach(([a,b])=>{const m=box(a,b,-7,PIERTOP,Z1-1.5,Z1+.5,M.xlGranite,{vo:BASE,parent:FW[k]});
+  m.userData.fw=k;retain.push(m);pillarCap((a+b)/2,Z1-.5,FW[k]);});});
 // optional accent: the top retaining course (the one at patio level, right under the seat wall) in Charcoal Pisa XL Smooth.
 // Same unit and setback as the Granite courses, so the joints line up; it wraps the stair piers at the same course.
 const accent=new T.Group(); scene.add(accent);
+const ACC={5:new T.Group(),8:new T.Group()}; accent.add(ACC[5],ACC[8]); ACC[8].visible=false;
 // option: pavers run all the way to the house instead of the 2' river-rock strip. Field + soldier border wrap the bay,
 // the side walls and walkout caps extend to the house; rock stays only past the patio ends.
 const pavHouse=new T.Group(), pavHouseAcc=new T.Group(); pavHouse.visible=false; scene.add(pavHouse); pavHouse.add(pavHouseAcc);
@@ -635,7 +649,7 @@ const pavHouse=new T.Group(), pavHouseAcc=new T.Group(); pavHouse.visible=false;
    box(a-.006,b+.006,BASE-XLC,BASE,-.006,Z0,M.xlCharcoal,{vo:BASE,parent:pavHouseAcc,cast:false});
    cop(a-.08,b+.08,BASE,BASE+COP,0,Z0,COPZ,{parent:pavHouse,uo:a,vo:0},a<1?'-x':'+x');});})();
 retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBox,e=.006;
-  box(b.min.x-e,b.max.x+e,BASE-XLC,BASE,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:accent,cast:false});});
+  box(b.min.x-e,b.max.x+e,BASE-XLC,BASE,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:m.userData.fw?ACC[m.userData.fw]:accent,cast:false});});
 
 // yard stair: 5 risers of ~7-5/8" from the patio to the lawn, 12" treads, Pisa Granite risers + Endura treads
 // yard risers sized to the measured grade: 4 @ ~6" with 3 door steps, 5 @ ~6-5/8" with the patio a riser higher
@@ -858,7 +872,109 @@ setSeat('ls');
 function fireTick(t,dark){if(!fireGroup.visible||!furn.visible)return;
   flames.forEach(f=>{const u=f.userData,n=Math.sin(t*9+u.ph)*.5+Math.sin(t*15.3+u.ph*2)*.3+Math.sin(t*4.1+u.ph)*.2;
     f.scale.set(u.h*.32*(0.92+0.12*n),u.h*(0.75+0.4*n),1); f.material.opacity=dark?0.8:0.6;});
-  fireLight.intensity=(dark?1.3:0.35)*(0.88+0.12*Math.sin(t*17)+0.06*Math.sin(t*7.3));}
+  fireLight.intensity=(dark?1.3:0.35)*(0.88+0.12*Math.sin(t*17)+0.06*Math.sin(t*7.3));
+  PITL.forEach(l=>l.intensity=fireLight.intensity*(flames[0].visible?1:0));}
+// ---- yard stair options ("Yard stairs" control). Each one is built for both patio heights (3 and 2 door steps) and
+// sized to the measured grade; the drawn 5' straight stair (YARD) stays the default.
+//  cake     - full wedding cake: every step below the patio wraps the front and both sides
+//  cascade  - staggered landings stepping down and sliding sideways, a step between each, raised planting pockets in the notches
+//  terrace  - steps down into a lower 12' x 11' herringbone terrace with an L seat wall and a round fire pit
+//  landcake - two straight steps to a 9' x 4'-6" herringbone landing, then wedding-cake steps around the landing
+//  wide     - 8' garden stair with 15" treads (front wall opening widened, piers moved out)
+let YSTAIR='straight';
+const SV={straight:{3:{g:YARD[3].g,lt:[]},2:{g:YARD[2].g,lt:[]}}}, PITL=[]; let STB=null;
+(function(){const TD=1, SCX=(ST0+ST1)/2, CD=14/12;
+ const gk=k=>z=>gradeA(z)-(k===2?DR:0);
+ const best=(ns,f,t)=>{let b=null;ns.forEach(n=>{const r=f(n);if(r>0&&(!b||Math.abs(r-t)<Math.abs(b[1]-t)))b=[n,r];});return b;};
+ // a step or landing: block from below grade up under the coping, Endura fullnose on the exposed edges (f = yard side,
+ // e = east end, w = west end), herringbone Holland Premier inside the frame when o.inner
+ function slab(G,xa,xb,za,zb,top,sd,o={}){const P={parent:G},cd=o.cd||CD;
+   box(xa,xb,-6.5,top-COP,za,zb,o.mat||M.riser,{...P,uo:xa,vo:top-COP});
+   let x0=xa,x1=xb,z1=zb;
+   if(sd.includes('f')){cop(xa-.03,xb+.03,top-COP,top,zb-cd,zb+.06,M.copX,{...P,uo:xa,vo:zb-cd},'+z');z1=zb-cd;}
+   if(sd.includes('e')&&z1-za>.02){cop(xa-.03,xa+cd,top-COP,top,za,z1,COPZ,{...P,uo:xa,vo:za},'-x');x0=xa+cd;}
+   if(sd.includes('w')&&z1-za>.02){cop(xb-cd,xb+.03,top-COP,top,za,z1,COPZ,{...P,uo:xb-cd,vo:za},'+x');x1=xb-cd;}
+   if(o.trim){x1-=o.trim.w||0;z1-=o.trim.f||0;}
+   if(o.inner&&x1-x0>.2&&z1-za>.2)box(x0,x1,top-COP,top-.004,za,z1,herringbone((x1-x0)*12,(z1-za)*12),{...P,uo:x0,vo:za,cast:false});}
+ // the patio-level tread in the wall opening, same as the drawn stair
+ function openTread(G,a,b){const P={parent:G};box(a,b,-4,-COP,Z1-WALL,Z1,M.riser,{...P,uo:a,vo:-COP});
+   cop(a-.03,b+.03,-COP,0,Z1-WALL,Z1+.06,M.copX,{...P,uo:a,vo:Z1-WALL-.04},'+z');}
+ const nose=(L,x,top,z)=>L.push([x,top-COP-.22,z+.07]);   // step light tucked under a nosing
+ const MULCH=new T.MeshStandardMaterial({color:0x2a2420,roughness:1}), shrubG=new T.SphereGeometry(1,14,10);(function(){const p=shrubG.attributes.position;
+   for(let i=0;i<p.count;i++){const k=1+.12*Math.sin(p.getX(i)*7+p.getZ(i)*5);p.setXYZ(i,p.getX(i)*k,p.getY(i)*k*.8,p.getZ(i)*k);}shrubG.computeVertexNormals();})();
+ const B={
+  cake(G,k,L){const g=gk(k),[n,r]=best([3,4,5,6,7],n=>-g(Z1+(n-1)*TD)/n,.52);openTread(G,ST0,ST1);
+    for(let i=1;i<n;i++){const top=-r*i;slab(G,ST0-i*TD,ST1+i*TD,Z1,Z1+i*TD,top,'few',{cd:TD});nose(L,SCX-1.5,top,Z1+i*TD);nose(L,SCX+1.5,top,Z1+i*TD);}
+    return {n,r};},
+  cascade(G,k,L){const g=gk(k),X=[[ST0-1.5,ST1+1.5],[ST0+1.5,ST1+4.5],[ST0-1.5,ST1+1.5]],Z=[[Z1,Z1+4.5],[Z1+3.5,Z1+9],[Z1+8,Z1+13.5]];
+    const [np,r]=best([2,3],p=>-g(Z[p-1][1])/(2*p+1),.54);openTread(G,ST0,ST1);
+    for(let i=0;i<np;i++){const top=-2*r*(i+1),[xa,xb]=X[i],[za,zb]=Z[i];slab(G,xa,xb,za,zb,top,'few',{inner:true});
+      nose(L,(xa+xb)/2-2,top,zb);nose(L,(xa+xb)/2+2,top,zb);
+      const bt=-r*(2*i+1),ba=i?Math.max(X[i-1][0],xa):ST0,bb=i?Math.min(X[i-1][1],xb):ST1,bz=i?Z[i-1][1]:Z1;
+      slab(G,ba,bb,bz,bz+TD,bt,'f',{cd:TD});nose(L,(ba+bb)/2,bt,bz+TD);}
+    // raised planting pockets (uncapped Granite Pisa XL, black mulch, low evergreens) in the notches the stagger leaves
+    const pk=[[ST1+1.5,ST1+4.5,Z1,Z[1][0],-3*r]];
+    if(np>2)pk.push([ST0-1.5,ST0+1.5,Z[0][1],Z[2][0],-5*r],[ST1+1.5,ST1+4.5,Z[1][1],Z[2][1],-6.4*r]);
+    else pk.push([ST0-1.5,ST0+1.5,Z[0][1],Z[1][1],Math.max(-4.6*r,g(Z[0][1])+.3)]);
+    pk.forEach(([xa,xb,za,zb,top])=>{const P={parent:G},t=.42;
+      box(xa,xa+t,-6.5,top,za,zb,M.xlGranite,{...P,vo:top});box(xb-t,xb,-6.5,top,za,zb,M.xlGranite,{...P,vo:top});
+      box(xa+t,xb-t,-6.5,top,zb-t,zb,M.xlGranite,{...P,uo:xa,vo:top});
+      box(xa+t,xb-t,-6.5,top-.16,za,zb-t,MULCH,{...P,uo:xa,vo:za,cast:false});
+      const cx=(xa+xb)/2,n=Math.max(1,Math.round((zb-za)/2.2));
+      for(let j=0;j<n;j++){const m=new T.Mesh(shrubG,M.shrub),s=.62+.12*((j*7+k)%3);m.scale.set(s,s,s);
+        m.position.set(cx+(j%2?.25:-.25),top-.16+s*.55,za+(zb-za-t)*(j+.5)/n);m.castShadow=m.receiveShadow=true;G.add(m);}});
+    return {n:2*np+1,r};},
+  terrace(G,k,L){const g=gk(k),r=YARD[k].rise,nT=Math.max(3,Math.round(-(g(Z1+6)+.3)/r)),TL=-nT*r,xa=ST0-3,xb=ST1+4,za=Z1,zb=Z1+nT-1+8;openTread(G,ST0,ST1);
+    // the terrace sits a few inches above the lawn at its open east side: as many risers down from the patio as that takes
+    for(let i=1;i<nT;i++){slab(G,ST0,ST1,Z1,Z1+i*TD,-r*i,'f',{cd:TD});nose(L,SCX-1.3,-r*i,Z1+i*TD);nose(L,SCX+1.3,-r*i,Z1+i*TD);}
+    slab(G,xa,xb,za,zb,TL,'e',{inner:true,mat:M.xlGranite,trim:{w:WALL,f:WALL}});
+    // L seat wall on the yard side and the west side (Pisa Edge, Endura fullnose toward the seats); east side left open
+    const ov=(COPD-WALL)/2,P={parent:G};
+    box(xa+.01,xb-.01,TL-COP-.01,TL+SEATTOP,zb-WALL+.01,zb-.01,M.edge,{...P,vo:TL+BASE});
+    box(xb-WALL+.01,xb-.01,TL-COP-.01,TL+SEATTOP,za+.01,zb-WALL-.01,M.edge,{...P,vo:TL+BASE});
+    cop(xa-ov,xb+ov,TL+SEATTOP,TL+SEATTOP+COP,zb-WALL-ov,zb+ov,M.copX,{...P,uo:xa-ov,vo:zb-WALL-ov},'-z');
+    cop(xb-WALL-ov,xb+ov,TL+SEATTOP,TL+SEATTOP+COP,za,zb-WALL-ov,COPZ,{...P,uo:xb-WALL-ov,vo:za},'-x');
+    // round fire pit: Granite Pisa XL ring, dark cap, lava rock, flames on the Fire switch
+    const cx=(xa+CD+xb-WALL)/2, cz=(Z1+nT-1+zb-WALL)/2, R=1.85, H=1.15;
+    const pg=new T.CylinderGeometry(R,R,H,48,1,true),uv=pg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*2*Math.PI*R,uv.getY(i)*H);
+    const pm=new T.Mesh(pg,M.xlGranite);pm.position.set(cx,TL+H/2,cz);pm.castShadow=pm.receiveShadow=true;G.add(pm);
+    const capM=new T.MeshStandardMaterial({color:0x343537,roughness:.85,side:T.DoubleSide});
+    const cap=new T.Mesh(new T.CylinderGeometry(R+.08,R+.08,.2,48,1,true),capM);cap.position.set(cx,TL+H+.1,cz);cap.castShadow=true;G.add(cap);
+    const capT=new T.Mesh(new T.RingGeometry(R-.6,R+.08,48),capM);capT.rotation.x=-Math.PI/2;capT.position.set(cx,TL+H+.2,cz);capT.receiveShadow=true;G.add(capT);
+    const inner=new T.Mesh(new T.CylinderGeometry(R-.6,R-.6,.34,40,1,true),new T.MeshStandardMaterial({color:0x2a2827,roughness:1,side:T.BackSide}));inner.position.set(cx,TL+H+.03,cz);G.add(inner);
+    const bed=new T.Mesh(new T.CircleGeometry(R-.6,40),new T.MeshStandardMaterial({color:0x1c1a19,roughness:1}));bed.rotation.x=-Math.PI/2;bed.position.set(cx,TL+H-.13,cz);G.add(bed);
+    const lava=new T.MeshStandardMaterial({color:0x3b2f2a,roughness:1});
+    for(let i=0;i<70;i++){const a=Math.random()*6.283,d=Math.sqrt(Math.random())*(R-.72),m=new T.Mesh(new T.DodecahedronGeometry(.07+Math.random()*.06,0),lava);m.position.set(cx+Math.cos(a)*d,TL+H-.1+Math.random()*.05,cz+Math.sin(a)*d);m.rotation.set(Math.random()*3,Math.random()*3,0);G.add(m);}
+    const fmap=flames[0].material.map;
+    for(let i=0;i<14;i++){const f=new T.Sprite(new T.SpriteMaterial({map:fmap,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:.75}));
+      const h=.7+Math.random()*.5,a=Math.random()*6.283,d=Math.random()*.55;f.center.set(.5,.06);f.position.set(cx+Math.cos(a)*d,TL+H-.02,cz+Math.sin(a)*d);
+      f.scale.set(h*.32,h,1);f.userData={h,ph:Math.random()*10};f.renderOrder=3;f.visible=flames[0].visible;G.add(f);flames.push(f);}
+    const pl=new T.PointLight(0xff8a3a,.35,14,2);pl.position.set(cx,TL+H+.9,cz);G.add(pl);PITL.push(pl);
+    // off the open east side down to the lawn
+    const dE=TL-g(Z1+nT+2),nE=Math.max(1,Math.ceil(dE/.6)),rE=dE/nE;
+    for(let i=1;i<nE;i++){const top=TL-rE*i,x0=xa-i*TD;box(x0,xa,-6.5,top-COP,Z1+nT-.5,Z1+nT+4.5,M.riser,{...P,vo:top-COP});
+      cop(x0-.06,x0+TD,top-COP,top,Z1+nT-.53,Z1+nT+4.53,COPZ,{...P,uo:x0,vo:Z1+3.5},'-x');}
+    return {n:nT,r,exit:nE,above:dE*12};},
+  landcake(G,k,L){const g=gk(k),LX=[ST0-2,ST1+2],LZ=4.5,[m,r]=best([1,2,3,4],m=>-g(Z1+LZ+m*TD)/(3+m),.52);openTread(G,ST0,ST1);
+    slab(G,ST0,ST1,Z1,Z1+TD,-r,'f',{cd:TD});nose(L,SCX-1.3,-r,Z1+TD);nose(L,SCX+1.3,-r,Z1+TD);
+    slab(G,LX[0],LX[1],Z1,Z1+LZ,-2*r,'few',{inner:true});nose(L,SCX-2.5,-2*r,Z1+LZ);nose(L,SCX+2.5,-2*r,Z1+LZ);
+    for(let j=1;j<=m;j++){const top=-(2+j)*r;slab(G,LX[0]-j*TD,LX[1]+j*TD,Z1,Z1+LZ+j*TD,top,'few',{cd:TD});nose(L,SCX-3,top,Z1+LZ+j*TD);nose(L,SCX+3,top,Z1+LZ+j*TD);}
+    return {n:3+m,r};},
+  wide(G,k,L){const g=gk(k),[a,b]=FWX[8],TW=1.25,[n,r]=best([3,4,5,6,7],n=>-g(Z1+(n-1)*TW)/n,.48),P={parent:G};openTread(G,a,b);
+    for(let i=1;i<n;i++){const top=-r*i,z0=Z1+(i-1)*TW,z1=Z1+i*TW;box(a,b,-6.5,top-COP,z0,z1,M.riser,{...P,uo:a,vo:top-COP});
+      cop(a-.03,b+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:a,vo:z0-.04},'+z');nose(L,(a+b)/2-2.2,top,z1);nose(L,(a+b)/2+2.2,top,z1);}
+    return {n,r};}};
+ STB=B;
+})();
+// options are built the first time they're picked (keeps the page load the same as before)
+function ensureStair(v,k){if(SV[v]&&SV[v][k])return SV[v][k];const G=new T.Group(),lt=[];G.visible=false;scene.add(G);const info=STB[v](G,k,lt);
+  const N=new T.Group();N.visible=false;nightGroup.add(N);NPAR=N;let zmax=Z1;lt.forEach(([x,y,z])=>{fixture(x,y,z,0.35,0.08,0.04);zmax=Math.max(zmax,z);});
+  if(zmax>Z1+5)lamp(SCX0,-1.6,(Z1+zmax)/2+1,K2700,0.9,8);NPAR=null;(SV[v]=SV[v]||{})[k]={g:G,lt,info,night:N};return SV[v][k];}
+function applyStair(){const k=LIFT>0?2:3;if(YSTAIR!=='straight')ensureStair(YSTAIR,k);
+  Object.entries(SV).forEach(([v,o])=>[3,2].forEach(n=>{if(!o[n])return;const on=v===YSTAIR&&n===k;o[n].g.visible=on;if(o[n].night)o[n].night.visible=on;}));
+  const w=YSTAIR==='wide'?8:5;[5,8].forEach(q=>{FW[q].visible=ACC[q].visible=q===w;if(typeof NFW!=='undefined')NFW[q].visible=q===w;});}
+window.__stairInfo=()=>Object.fromEntries(Object.keys(STB).map(v=>[v,{3:ensureStair(v,3).info,2:ensureStair(v,2).info}]));
+
 // cook line on the east wall, from the walkout to the front corner: Spirit E-425, Slate 36" griddle, Ninja Woodfire on its stand
 const CK=[[4.9,51.8/12,31/12],[4.9+51.8/12,71.5/12,28.4/12],[4.9+(51.8+71.5)/12,34/12,26/12]];
 const COOKD=Math.max(...CK.map(c=>c[2]));
@@ -1127,13 +1243,16 @@ window.__steps=k=>{setSteps(k);press('[data-steps]',document.querySelector(`[dat
 // patio height: 3 door steps (as drawn) or 2 door steps with the patio one riser (7-3/4") higher and one more yard step.
 // The patio stays put; the house, lawn and neighbor drop by the riser, and the step sets swap.
 function setLift(n){n=+n;const was=LIFT;LIFT=n===2?DR:0;const d=LIFT-was;worldG.position.y=-LIFT;
-  [3,2].forEach(k=>{const on=k===n,o=STEPG[k];o.S.visible=o.W.visible=o.pS.visible=o.pW.visible=on;YARD[k].g.visible=on;NL[k].visible=on;});
+  [3,2].forEach(k=>{const on=k===n,o=STEPG[k];o.S.visible=o.W.visible=o.pS.visible=o.pW.visible=on;ND[k].visible=on;});applyStair();
   walkB.visible=n===2; doorLamp.position.y=SILL+4-LIFT;
   ['yard','stairs','east','west'].forEach(k=>V[k].p[1]=eye(V[k].p[2])); V.door.p[1]=SILL-LIFT-DR+EYE; if(V.neighbor)V.neighbor.p[1]=ground(27)+7.1;
   // standing in the yard, you stay on the lawn (it just dropped); on the patio or the steps you stay where you are
   if(d&&mode==='eye'){const c=camera.position;if(c.z>Z1+0.3||c.x<-0.2||c.x>PW+0.2||c.z<0)c.y-=d;}}
 $$('[data-lift]').forEach(b=>b.addEventListener('click',()=>{setLift(b.dataset.lift);press('[data-lift]',b);}));
 window.__lift=k=>{setLift(k);press('[data-lift]',document.querySelector(`[data-lift="${k}"]`));};
+function setYStair(v){if(v!=='straight'&&!STB[v])return;YSTAIR=v;applyStair();}
+$$('[data-ystair]').forEach(b=>b.addEventListener('click',()=>{setYStair(b.dataset.ystair);press('[data-ystair]',b);}));
+window.__ystair=v=>{setYStair(v);press('[data-ystair]',document.querySelector(`[data-ystair="${v}"]`));};
 $$('[data-riser]').forEach(b=>b.addEventListener('click',()=>{setRiser(b.dataset.riser);press('[data-riser]',b);}));
 window.__riser=k=>{setRiser(k);press('[data-riser]',document.querySelector(`[data-riser="${k}"]`));};
 const accSwitch=sw('t-accent',on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;});
@@ -1169,20 +1288,29 @@ const nightGroup=new T.Group(); nightGroup.visible=false; scene.add(nightGroup);
 const glowMat=new T.MeshBasicMaterial({color:0xffd9a8});
 let NPAR=null;   // when set, new fixtures go into this sub-group of the night lighting (per patio-height option)
 function fixture(x,y,z,w,h,d){const m=new T.Mesh(new T.BoxGeometry(w,h,d),glowMat);m.position.set(x,y,z);(NPAR||nightGroup).add(m);}
-function lamp(x,y,z,c,intensity,dist){const l=new T.PointLight(c,intensity,dist,2);l.position.set(x,y,z);nightGroup.add(l);return l;}
+function lamp(x,y,z,c,intensity,dist){const l=new T.PointLight(c,intensity,dist,2);l.position.set(x,y,z);(NPAR||nightGroup).add(l);return l;}
 const K3000=0xffc58f, K2700=0xffb46b, capY=SEATTOP-0.06;
+// front-wall cap and pier lights follow the stair opening (5' drawn, 8' with the wide garden stair)
+const NFW={5:new T.Group(),8:new T.Group()}; nightGroup.add(NFW[5],NFW[8]); NFW[8].visible=false;
+NPAR=NFW[5];
 [2.2,5.2,8.2,11.0, 23.2,26.6,30.0,33.0].forEach(x=>{fixture(x,capY,Z1+0.04,0.5,0.06,0.08);lamp(x,0.2,Z1+0.7,K3000,1.1,7);});
 [3.2,6.6,10.0,24.5,28.5,32.4].forEach(x=>{fixture(x,capY,Z1-WALL-0.04,0.5,0.06,0.08);lamp(x,0.9,Z1-WALL-0.7,K3000,0.6,6);});
+NPAR=NFW[8];
+[2.2,5.2,8.2, 24.6,27.4,30.2,33.0].forEach(x=>{fixture(x,capY,Z1+0.04,0.5,0.06,0.08);lamp(x,0.2,Z1+0.7,K3000,1.1,7);});
+[3.2,6.6, 25.4,28.8,32.4].forEach(x=>{fixture(x,capY,Z1-WALL-0.04,0.5,0.06,0.08);lamp(x,0.9,Z1-WALL-0.7,K3000,0.6,6);});
+NPAR=null;
 [7,10.5,14,17.5].forEach(z=>{fixture(-0.04,capY,z,0.08,0.06,0.5);lamp(-0.7,0.1,z,K3000,0.9,6.5);});
 fixture(WALL+0.04,capY,5.4,0.08,0.06,0.5); lamp(WALL+0.7,0.9,5.4,K3000,0.5,5);
 // pier lights tucked under each cap, washing down the yard face and the stair-side face
-[[ST0-2,ST0,1],[ST1,ST1+2,-1]].forEach(([a,b,sd])=>{const cx=(a+b)/2, sx=sd>0?b:a;
+[5,8].forEach(q=>{NPAR=NFW[q];const [s0,s1]=FWX[q];[[s0-2,s0,1],[s1,s1+2,-1]].forEach(([a,b,sd])=>{const cx=(a+b)/2, sx=sd>0?b:a;
   fixture(cx,PIERTOP-0.05,Z1+0.5+0.04,0.5,0.06,0.08); lamp(cx,PIERTOP-0.6,Z1+1.1,K3000,0.9,6);
-  fixture(sx+sd*0.04,PIERTOP-0.05,Z1-0.5,0.08,0.06,0.5); lamp(sx+sd*0.6,PIERTOP-0.6,Z1-0.5,K3000,0.6,5);});
-const NL={3:new T.Group(),2:new T.Group()}; nightGroup.add(NL[3],NL[2]); NL[2].visible=false;
+  fixture(sx+sd*0.04,PIERTOP-0.05,Z1-0.5,0.08,0.06,0.5); lamp(sx+sd*0.6,PIERTOP-0.6,Z1-0.5,K3000,0.6,5);});});NPAR=null;
+const NL={3:new T.Group(),2:new T.Group()}, ND={3:new T.Group(),2:new T.Group()}; nightGroup.add(NL[3],NL[2],ND[3],ND[2]); NL[2].visible=ND[2].visible=false;
+const SCX0=(ST0+ST1)/2;
 [3,2].forEach(k=>{NPAR=NL[k];for(let i=0;i<YARD[k].n;i++){const top=-YARD[k].rise*i, z=Z1+i+0.01;[ST0+1.1,ST1-1.1].forEach(x=>fixture(x,top-COP-0.22,z,0.35,0.08,0.04));}
- for(let t=1;t<k+1;t++)[BAY0+1.5,BAY1-1.5].forEach(x=>fixture(x,(k+1-t)*DR-COP-0.22,Z0+2.5+(t-1)*11/12+0.07,0.35,0.08,0.04));});NPAR=null;
-lamp((ST0+ST1)/2,-0.6,Z1+1.6,K2700,1.0,6); lamp((ST0+ST1)/2,-2.0,Z1+3.6,K2700,1.0,6);
+ NPAR=ND[k];for(let t=1;t<k+1;t++)[BAY0+1.5,BAY1-1.5].forEach(x=>fixture(x,(k+1-t)*DR-COP-0.22,Z0+2.5+(t-1)*11/12+0.07,0.35,0.08,0.04));
+ SV.straight[k].night=NL[k];});NPAR=null;
+lamp(SCX0,-0.6,Z1+1.6,K2700,1.0,6); lamp(SCX0,-2.0,Z1+3.6,K2700,1.0,6);
 lamp(BAYC,1.2,Z0+5.2,K2700,0.9,7);
 fixture(GCX,GH-0.15,GCZ,0.9,0.12,0.9); lamp(GCX,GH-0.6,GCZ,K2700,1.2,11);
 const doorLamp=lamp(BAYC,SILL+4,Z0+1.2,K2700,0.5,7);
@@ -1323,7 +1451,7 @@ function dim(a,b,text,sub,when){const line=dimLine(a,b,dimMat,dimGroup);const el
  [3,2].forEach(k=>{const L=k===2?DR:0, w=()=>(LIFT>0)===(k===2), g=z=>gradeA(z)-L, n=YARD[k].n;
    dim([PW+.55,g(Z1),Z1+.3],[PW+.55,capT,Z1+.3],ftin(capT-g(Z1)),'wall, lawn to cap',w);
    dim([PW+1.6,g(Z1),Z1+.3],[PW+1.6,0,Z1+.3],ftin(-g(Z1)),'patio above lawn',w);
-   dim([ST0,g(Z1+n)+.1,Z1+n],[ST1,g(Z1+n)+.1,Z1+n],ftin(ST1-ST0),`stair · ${n} risers @ ${ftin(YARD[k].rise)}`,w);
+   dim([ST0,g(Z1+n)+.1,Z1+n],[ST1,g(Z1+n)+.1,Z1+n],ftin(ST1-ST0),`stair · ${n} risers @ ${ftin(YARD[k].rise)}`,()=>w()&&YSTAIR==='straight');
    dim([BAY0-.45,0,Z0+.1],[BAY0-.45,SILL-L,Z0+.1],ftin(SILL-L),`door sill above patio · ${k} steps`,w);
    dim([BAY1+.4,yl,Z0],[BAY1+.4,yl,Z0+2.5+(k-1)*11/12],ftin(2.5+(k-1)*11/12),'door steps',w);});
  dim([11,0,Z1-WALL-.25],[11,capT,Z1-WALL-.25],ftin(capT),'seat wall');
@@ -1836,6 +1964,9 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
   add(img(rc?'pxlcc':'pxlgr'),'Stair risers','Pisa XL Smooth · '+(rc?'Midnight Charcoal':'Granite'));
   add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
   add(col('#b27a47'),'Gazebo','Yardistry Meridian 12×12 · cedar');
+  if(YSTAIR==='cascade'||YSTAIR==='landcake'||YSTAIR==='terrace')add(img('gf'),YSTAIR==='terrace'?'Lower terrace':'Yard landings','Holland Premier · Granite Fusion · 45° herringbone, Endura frame');
+  if(YSTAIR==='cascade')add(img('pxlgr'),'Planting pockets','Pisa XL Smooth · Granite, uncapped · black mulch, low evergreens');
+  if(YSTAIR==='terrace')add(img('pxlgr'),'Fire pit','Pisa XL Smooth · Granite, round · dark cap, lava rock');
   if(!toHouse)add(col('#8c877d'),'Strip along the house','River rock');
   if(P2.pw)add(col('#b27a47'),'Privacy wall · Phase 2','Yardistry Meridian privacy wall · 55" TV');
   if(P2.bed)add(img('pxlgr'),'Arborvitae bed · Phase 2','Pisa XL Smooth · Granite, uncapped · Emerald Green');
@@ -1862,7 +1993,7 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
  return {refresh,areas};})();
 window.__legend=()=>{LEG.refresh();return {rows:[...document.querySelectorAll('#lgList .lgr b')].map(b=>b.textContent),area:document.getElementById('lgArea').innerText,a:LEG.areas()};};
 const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person','t-legend'];
-const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps','lift'];
+const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps','lift','ystair'];
 const r2=v=>Math.round(v*100)/100;
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const dec=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
