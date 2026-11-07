@@ -498,7 +498,7 @@ const BAYHUG=[]; let SOFA_X=0, LS_SEAT=null, SEC_SET=null; const SWV=[], DINE=[]
 
 // ---- layout (feet), from the latest drawings. x: along the house, EAST end at x=0 (left when you face the
 // house from the yard), WEST end at x=35. z: from the main back wall toward the yard. y: up, patio surface = 0.
-const PW=35, Z0=2, Z1=19;                       // 35' x 17' patio, 2' off the main wall (flush with the bay face)
+const PW=35, Z0=2, Z1=18;                       // 35' x 18' patio (18' out from the main wall), starting 2' off it at the bay face
 const HX0=-4, HX1=36;                           // 40' back wall: patio 4' in from the east corner, 1' from the west
 const BAY0=HX0+11.42, BAY1=BAY0+10, BAYC=BAY0+5;  // 10' bay bump-out with the slider, 2' deep, 11'-5" from the east corner
 const WALL=1.0, BASE=-2/12;                     // 12" walls; first seat course starts 2" below the patio
@@ -745,14 +745,18 @@ const CAKE_LW=7;   // wedding-cake landing: 7'-0" wide, centred on the 6' slider
    else{box(a-B,a,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:a-B,vo:Z0});box(b,b+B,-0.6,0.02,Z0,Z0+B,M.borderZ,{...PH,uo:b,vo:Z0});
      box(a-B,Math.max(a,BAY0),-0.6,0.02,B,Z0,M.borderZ,{...PH,uo:a-B,vo:B});box(Math.min(b,BAY1),b+B,-0.6,0.02,B,Z0,M.borderZ,{...PH,uo:Math.min(b,BAY1),vo:B});}});});
 function setSteps(m){const cake=m==='cake';stepsS.visible=phS.visible=!cake;stepsW.visible=phW.visible=cake;BAYHUG.forEach(o=>o.visible=!cake);}
-// Yardistry Meridian 12x12 (YM11769): posts 12" off the west and front seat walls.
-// Yardistry lists the base at 11'-6" outside / 9'-10 1/2" inside, i.e. 10" post bases on 10'-8 1/2" centres
-// (matches their 10x12 anchor drawing, 10'-8 3/8" on the 12' side) -> 6x6 posts 11'-2" outside to outside
+// Yardistry 12 x 14 Gazebo with Steel (YM12983), long side along the house, posts 12" off the west and front seat walls.
+// From Yardistry's layout drawing: roof 14'-1" x 12'-1", posts 12'-10 3/8" x 10'-10 3/8" outside to outside (6x8 posts with
+// classic plinths), 7'-0 1/4" clear to the bottom of the arched steel trusses, 10'-4 3/4" to the peak, 21-degree hip roof
+// in graphite aluminum. Mocha Brown factory stain.
 const furn=new T.Group(); scene.add(furn);
 const secGroup=new T.Group(), lsGroup=new T.Group(); furn.add(secGroup,lsGroup);
 let LS_FX=0;   // fire-table centre (x) in the loveseat + swivels layout
-const PO=5.5/12, POUT=134/12, GXo=[PW-WALL-1-POUT, PW-WALL-1], GZo=[Z1-WALL-1-POUT, Z1-WALL-1];
-const GX=[GXo[0]+PO/2,GXo[1]-PO/2], GZ=[GZo[0]+PO/2,GZo[1]-PO/2], GH=86.5/12, ROOF=12.099, GCX=(GXo[0]+GXo[1])/2, GCZ=(GZo[0]+GZo[1])/2;
+const MOCHA=new T.MeshStandardMaterial({color:0x6e4b36,roughness:.78}), GSTEEL=new T.MeshStandardMaterial({color:0x1c1d1f,roughness:.42,metalness:.55});
+const PX=7.5/12, PZ=5.5/12, PO=PZ, POX=12+10.375/12, POZ=10+10.375/12, POUT=POZ;
+const GXo=[PW-WALL-1-POX, PW-WALL-1], GZo=[Z1-WALL-1-POZ, Z1-WALL-1];
+const GX=[GXo[0]+PX/2,GXo[1]-PX/2], GZ=[GZo[0]+PZ/2,GZo[1]-PZ/2], GH=7.3, GBD=.62, ROOFX=14+1/12, ROOFZ=12+1/12, ROOF=ROOFZ, GPEAK=10.4;
+const GCX=(GXo[0]+GXo[1])/2, GCZ=(GZo[0]+GZo[1])/2, TRUSS_MID=7+.25/12, TRUSS_END=6.3;
 // optional gazebo border: one soldier course of the same Holland Premier squaring off the gazebo. On the west and yard
 // sides the perimeter border already does it (about 4" outside the posts there), so just two runs are added on the
 // east and house sides, the same 4" outside the posts. One course all the way around, no doubled band, no slivers.
@@ -763,42 +767,58 @@ const gzRug=new T.Group(); gzRug.visible=false; scene.add(gzRug);   // off by de
  box(x0,x0+B,-0.6,0.02,z0+B,nb,M.borderZ,{...P,uo:x0,vo:z0+B});})();           // east
 const GZ_N0=scene.children.length;
 (function(){
- GX.forEach(x=>GZ.forEach(z=>{box(x-PO/2,x+PO/2,0,GH,z-PO/2,z+PO/2,M.cedar);box(x-5/12,x+5/12,0,.35,z-5/12,z+5/12,M.cedar);}));
- GZ.forEach(z=>box(GX[0]-.5,GX[1]+.5,GH,GH+.6,z-.2,z+.2,M.cedar));
- GX.forEach(x=>box(x-.2,x+.2,GH,GH+.6,GZ[0]-.5,GZ[1]+.5,M.cedar));
- const brace=new T.BoxGeometry(.25,2.2,.25);
- GX.forEach(x=>GZ.forEach(z=>{[[1,0],[0,1]].forEach(([dx,dz])=>{const sx=x<GCX?1:-1,sz=z<GCZ?1:-1;
-   const m=new T.Mesh(brace,M.cedar);m.position.set(x+dx*sx*.78,GH-.78,z+dz*sz*.78);m.rotation.set(dz*sz*0.79,0,-dx*sx*0.79);m.castShadow=true;scene.add(m);});}));
- const RH=10.5-(GH+.6);
- (function(){const y0=GH+.6, A=new T.Vector3(GCX,y0+RH,GCZ), h=ROOF/2;
-  const C=[[-h,-h],[h,-h],[h,h],[-h,h]].map(([dx,dz])=>new T.Vector3(GCX+dx,y0,GCZ+dz));
+ // 6x8 posts (notched for the recessed beams) on classic plinths
+ GX.forEach(x=>GZ.forEach(z=>{box(x-PX/2,x+PX/2,0,GH+GBD,z-PZ/2,z+PZ/2,MOCHA);
+   box(x-PX/2-.14,x+PX/2+.14,0,.86,z-PZ/2-.14,z+PZ/2+.14,MOCHA);box(x-PX/2-.18,x+PX/2+.18,.86,.94,z-PZ/2-.18,z+PZ/2+.18,MOCHA);
+   box(x-PX/2-.1,x+PX/2+.1,.94,1.0,z-PZ/2-.1,z+PZ/2+.1,MOCHA);}));
+ // recessed beams, running a little past the posts under the overhang
+ GZ.forEach(z=>box(GXo[0]-.5,GXo[1]+.5,GH,GH+GBD,z-.19,z+.19,MOCHA));
+ GX.forEach(x=>box(x-.19,x+.19,GH,GH+GBD,GZo[0]-.5,GZo[1]+.5,MOCHA));
+ // arched steel truss on all four sides: flat top chord under the beam, arched bottom chord, vertical webs, post plates
+ function truss(alongX,c,a0,a1){const L=a1-a0,pts=[],N=24;
+   const P=(u,y)=>alongX?new T.Vector3(a0+u*L,y,c):new T.Vector3(c,y,a0+u*L), ya=u=>TRUSS_MID-(TRUSS_MID-TRUSS_END)*Math.pow(2*u-1,2);
+   for(let i=0;i<=N;i++){const u=i/N;pts.push(P(u,ya(u)));}
+   const tube=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts),48,.05,8,false),GSTEEL);tube.castShadow=true;scene.add(tube);
+   if(alongX)box(a0,a1,GH-.09,GH,c-.06,c+.06,GSTEEL);else box(c-.06,c+.06,GH-.09,GH,a0,a1,GSTEEL);
+   const nw=Math.round(L/1.05);for(let i=1;i<nw;i++){const u=i/nw,y=ya(u);
+     if(alongX)box(a0+u*L-.03,a0+u*L+.03,y,GH-.09,c-.03,c+.03,GSTEEL);else box(c-.03,c+.03,y,GH-.09,a0+u*L-.03,a0+u*L+.03,GSTEEL);}
+   [a0,a1].forEach((a,j)=>{const s=j?-1:1;if(alongX)box(a+(j?-.05:0),a+(j?0:.05),TRUSS_END-.35,GH,c-.09,c+.09,GSTEEL);else box(c-.09,c+.09,TRUSS_END-.35,GH,a+(j?-.05:0),a+(j?0:.05),GSTEEL);});}
+ GZ.forEach(z=>truss(true,z,GX[0]+PX/2,GX[1]-PX/2));
+ GX.forEach(x=>truss(false,x,GZ[0]+PZ/2,GZ[1]-PZ/2));
+ // 21-degree hip roof with a short ridge along the long side, graphite aluminum standing seam
+ (function(){const y0=GH+GBD+.08, RH=GPEAK-y0, hx=ROOFX/2, hz=ROOFZ/2, rr=hx-hz;
+  const A1=new T.Vector3(GCX-rr,y0+RH,GCZ), A2=new T.Vector3(GCX+rr,y0+RH,GCZ);
+  const C=[[-hx,-hz],[hx,-hz],[hx,hz],[-hx,hz]].map(([dx,dz])=>new T.Vector3(GCX+dx,y0,GCZ+dz));
   const sc=document.createElement('canvas');sc.width=128;sc.height=8;const g=sc.getContext('2d');      // one 16" panel: flat pan + standing seam
-  g.fillStyle='#ffffff';g.fillRect(0,0,128,8);g.fillStyle='rgba(0,0,0,.35)';g.fillRect(0,0,5,8);g.fillStyle='rgba(255,255,255,.6)';g.fillRect(5,0,3,8);
+  g.fillStyle='#ffffff';g.fillRect(0,0,128,8);g.fillStyle='rgba(0,0,0,.38)';g.fillRect(0,0,5,8);g.fillStyle='rgba(255,255,255,.55)';g.fillRect(5,0,3,8);
   g.fillStyle='rgba(0,0,0,.08)';g.fillRect(40,0,2,8);g.fillRect(86,0,2,8);
   const st=new T.CanvasTexture(sc);st.wrapS=st.wrapT=T.RepeatWrapping;st.encoding=T.sRGBEncoding;st.anisotropy=8;
-  const top=new T.MeshStandardMaterial({color:0x35261d,map:st,roughness:.66,metalness:.22,side:T.FrontSide});
-  const under=new T.MeshStandardMaterial({color:0x8a6a50,roughness:.75,side:T.BackSide});
+  const top=new T.MeshStandardMaterial({color:0x474b4f,map:st,roughness:.55,metalness:.35,side:T.FrontSide});
+  const under=new T.MeshStandardMaterial({color:0x5a5d60,roughness:.7,side:T.BackSide});
   const pos=[],uv=[];
-  for(let k=0;k<4;k++){const c1=C[k],c2=C[(k+1)%4],e=c2.clone().sub(c1).normalize(),mid=c1.clone().add(c2).multiplyScalar(.5),sl=A.clone().sub(mid).normalize();
-   [c1,c2,A].forEach(P=>{pos.push(P.x,P.y,P.z);const d=P.clone().sub(c1);uv.push(d.dot(e)/(16/12),d.dot(sl));});}
-  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
-  // the faces were listed corner-to-corner around the square; flip the winding if they face down
-  geo.computeVertexNormals(); if(geo.attributes.normal.getY(0)<0){for(let i=0;i<pos.length;i+=9){for(let q=0;q<3;q++){const t=pos[i+3+q];pos[i+3+q]=pos[i+6+q];pos[i+6+q]=t;}
-     const j=i/9*6;for(let q=0;q<2;q++){const t=uv[j+2+q];uv[j+2+q]=uv[j+4+q];uv[j+4+q]=t;}}
-   geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.computeVertexNormals();}
-  top.shadowSide=T.DoubleSide;   // a single-sided sheet otherwise drops out of the shadow pass and only the rafters cast shadows
+  const tri=(P,Q,R,c1,e,sl)=>{const n=Q.clone().sub(P).cross(R.clone().sub(P));const L=n.y<0?[P,R,Q]:[P,Q,R];
+    L.forEach(V=>{pos.push(V.x,V.y,V.z);const d=V.clone().sub(c1);uv.push(d.dot(e)/(16/12),d.dot(sl));});};
+  for(let k=0;k<4;k++){const c1=C[k],c2=C[(k+1)%4],e=c2.clone().sub(c1).normalize(),mid=c1.clone().add(c2).multiplyScalar(.5);
+   const long=Math.abs(c2.x-c1.x)>1, near=V=>long?V:(Math.abs(c1.x-A1.x)<Math.abs(c1.x-A2.x)?A1:A2);
+   const sl=(long?new T.Vector3(mid.x,A1.y,GCZ):near(A1)).clone().sub(mid).normalize();
+   if(long){const a=c1.x<c2.x?[A1,A2]:[A2,A1];tri(c1,c2,a[1],c1,e,sl);tri(c1,a[1],a[0],c1,e,sl);} else tri(c1,c2,near(A1),c1,e,sl);}
+  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.computeVertexNormals();
+  top.shadowSide=T.DoubleSide;
   const roof=new T.Mesh(geo,top);roof.castShadow=true;roof.receiveShadow=true;scene.add(roof);
   const ceil=new T.Mesh(geo,under);ceil.receiveShadow=true;scene.add(ceil);
-  const cap=new T.MeshStandardMaterial({color:0x2a1e17,roughness:.6,metalness:.2}), raf=M.cedar;
+  const cap=new T.MeshStandardMaterial({color:0x2e3134,roughness:.5,metalness:.4});
   const beam=(P,Q,w,hgt,mat,drop)=>{const L=P.distanceTo(Q),m=new T.Mesh(new T.BoxGeometry(w,hgt,L),mat);m.position.copy(P).add(Q).multiplyScalar(.5);m.position.y-=drop;
     m.lookAt(Q.x,Q.y-drop,Q.z);m.castShadow=true;scene.add(m);return m;};
-  C.forEach(c=>{beam(c,A,.36,.14,cap,-.07); beam(c,A,.2,.4,raf,.42);});                                  // hip caps on top, hip rafters below
-  for(let k=0;k<4;k++){const c1=C[k],c2=C[(k+1)%4],e=c2.clone().sub(c1).normalize(),mid=c1.clone().add(c2).multiplyScalar(.5);
-   [ROOF*.25,ROOF*.5,ROOF*.75].forEach(u=>{const P=c1.clone().addScaledVector(e,u),f=Math.min(u,ROOF-u)/h,Q=P.clone().lerp(A.clone().sub(mid).add(P),f);beam(P,Q,.2,.3,raf,.22);});}
-  const fin=new T.Mesh(new T.CylinderGeometry(.12,.3,.45,12),cap);fin.position.set(GCX,y0+RH+.12,GCZ);fin.castShadow=true;scene.add(fin);
-  const fe=new T.Mesh(new T.SphereGeometry(.16,12,8),cap);fe.position.set(GCX,y0+RH+.42,GCZ);scene.add(fe);
-  // fascia band along the eaves
-  for(let k=0;k<4;k++){const c1=C[k],c2=C[(k+1)%4];beam(c1,c2,.08,.28,cap,.1);}})();
+  const nearA=c=>c.x<GCX?A1:A2;
+  C.forEach(c=>{beam(c,nearA(c),.34,.13,cap,-.065); beam(c,nearA(c),.2,.42,MOCHA,.42);});        // hip caps, hip rafters
+  beam(A1,A2,.34,.13,cap,-.065); beam(A1,A2,.22,.5,MOCHA,.45);                                      // ridge cap, ridge beam
+  // common rafters on the long slopes, one centre rafter on each end
+  [-hx*.55,-hx*.2,hx*.2,hx*.55].forEach(dx=>[-1,1].forEach(sz=>{const x=GCX+dx;if(Math.abs(dx)>rr+hz*.95)return;
+    beam(new T.Vector3(x,y0,GCZ+sz*hz),new T.Vector3(Math.max(A1.x,Math.min(A2.x,x)),y0+RH,GCZ),.18,.3,MOCHA,.24);}));
+  [A1,A2].forEach((A,j)=>beam(new T.Vector3(GCX+(j?hx:-hx),y0,GCZ),A,.18,.3,MOCHA,.24));
+  // two cedar roof ties across the short span
+  [-1,1].forEach(s=>{const x=GCX+s*2.6;box(x-.12,x+.12,GH+GBD-.45,GH+GBD,GZ[0]+.19,GZ[1]-.19,MOCHA);});
+  for(let k=0;k<4;k++){const c1=C[k],c2=C[(k+1)%4];beam(c1,c2,.08,.3,cap,.1);}})();            // graphite fascia
  // L-sectional facing west toward the privacy wall/TV: main run along the east posts, return along the house side
  const x0=GX[0]+.45, x1=x0+2.9, z0=GZ[0]+.6, z1=GZ[1]-.6, secSet=new T.Group(); secGroup.add(secSet); const P={parent:secSet};
  box(x0,x1,0,1.35,z0,z1,M.furnFrame,P); box(x0+.55,x1,1.35,1.7,z0+.05,z1-.05,M.cushion,P); box(x0,x0+.6,1.35,2.65,z0,z1,M.cushion,P);
@@ -824,15 +844,15 @@ const GZ_N0=scene.children.length;
  LS_FX=x1+1.5+25/24; swivel(LS_FX,GCZ+4.75,0); swivel(LS_FX,GCZ-4.75,Math.PI);
 })();
 scene.children.slice(GZ_N0).forEach(o=>o.userData.item='gazebo');
-// Yardistry 12' Meridian Privacy Wall (YM11804) on the west side of the gazebo, with a 55" TV facing the seating
+// Yardistry 12' Gazebo Privacy Wall (mocha brown) on the 12' west side of the gazebo, with a 55" TV facing the seating
 const pwGroup=new T.Group(); pwGroup.visible=true; scene.add(pwGroup);
-(function(){const x=GX[1], z0=GZ[0]+PO/2, z1=GZ[1]-PO/2, y0=0.35, y1=GH-0.1, sl=3.5/12, gap=0.75/12, th=0.75/12;
+(function(){const x=GX[1], z0=GZ[0]+PO/2, z1=GZ[1]-PO/2, y0=1.05, y1=TRUSS_END-.4, sl=3.5/12, gap=0.75/12, th=0.75/12;
  const o={parent:pwGroup};
- box(x-.12,x+.12,y0,y1,z0,z0+.12,M.cedar,o); box(x-.12,x+.12,y0,y1,z1-.12,z1,M.cedar,o);
- [1/3,2/3].forEach(f=>{const z=z0+(z1-z0)*f;box(x-.12,x+.12,y0,y1,z-.12,z+.12,M.cedar,o);});
- box(x-.13,x+.13,y1-.25,y1,z0,z1,M.cedar,o); box(x-.13,x+.13,y0,y0+.25,z0,z1,M.cedar,o);
- for(let y=y0+.3;y+sl<y1-.28;y+=sl+gap) box(x-th/2,x+th/2,y,y+sl,z0+.12,z1-.12,M.cedar,o);
- const tw=48.4/12, thh=28.0/12, cz=(z0+z1)/2, cy=4.6;   // 55" class: 48.4" x 28" with bezel
+ box(x-.12,x+.12,y0,y1,z0,z0+.12,MOCHA,o); box(x-.12,x+.12,y0,y1,z1-.12,z1,MOCHA,o);
+ [1/3,2/3].forEach(f=>{const z=z0+(z1-z0)*f;box(x-.12,x+.12,y0,y1,z-.12,z+.12,MOCHA,o);});
+ box(x-.13,x+.13,y1-.25,y1,z0,z1,MOCHA,o); box(x-.13,x+.13,y0,y0+.25,z0,z1,MOCHA,o);
+ for(let y=y0+.3;y+sl<y1-.28;y+=sl+gap) box(x-th/2,x+th/2,y,y+sl,z0+.12,z1-.12,MOCHA,o);
+ const tw=48.4/12, thh=28.0/12, cz=(z0+z1)/2, cy=4.2;   // 55" class: 48.4" x 28" with bezel
  box(x-.36,x-.14,cy-thh/2,cy+thh/2,cz-tw/2,cz+tw/2,M.steel,o);
  const scr=box(x-.37,x-.361,cy-thh/2+.06,cy+thh/2-.06,cz-tw/2+.06,cz+tw/2-.06,new T.MeshStandardMaterial({color:0x0b0d10,roughness:.45,metalness:.1,emissive:0x16304a,emissiveIntensity:0}),o);
  window.__tvScreen=scr;
@@ -1196,7 +1216,7 @@ window.__audit={
   'stair centre east of patio centre':PW/2-(ST0+ST1)/2,'stair centre west of door centre':(ST0+ST1)/2-BAYC,
   'west pier to gazebo post':GXo[0]-(ST1+2),'door steps to gazebo post':GXo[0]-BAY1,'rock strip to gazebo post':GZo[0]-Z0,'rock strip to post base':GZo[0]-(5/12-PO/2)-Z0,'between posts':GX[1]-GX[0]-PO,
   'post to west seat wall':(PW-WALL)-GXo[1],'post to front seat wall':(Z1-WALL)-GZo[1],'posts out-to-out':GXo[1]-GXo[0],
-  'walkway rock strip to roof edge':(GCZ-ROOF/2)-Z0,'walkway house to roof edge (pavers option)':(GCZ-ROOF/2),'path chairs to gazebo roof':(GCX-ROOF/2)-(TCX+TW/2+CHD),
+  'walkway rock strip to roof edge':(GCZ-ROOFZ/2)-Z0,'walkway house to roof edge (pavers option)':(GCZ-ROOFZ/2),'path chairs to gazebo roof':(GCX-ROOFX/2)-(TCX+TW/2+CHD),
   'aisle cook line to chairs':(TCX-TW/2-CHD)-(WALL+COOKD),'cook line stored':(COOK_END)-(COOK.grill.g.position.z-COOK.grill.stored/2),
   'seat height (in)':(SEATTOP+COP)*12,'pier above patio (in)':(PIERTOP+PCAP)*12,'door riser (in)':SILL/4*12,
   'yard riser (in)':RISE*12,'front wall showing at the corner (in)':-grade(Z1)*12,'door steps depth into patio':2.5+22/12,
@@ -1373,7 +1393,7 @@ NPAR=NFW[8];
 [2.2,5.2,8.2, 24.6,27.4,30.2,33.0].forEach(x=>{fixture(x,capY,Z1+0.04,0.5,0.06,0.08);lamp(x,0.2,Z1+0.7,K3000,1.1,7);});
 [3.2,6.6, 25.4,28.8,32.4].forEach(x=>{fixture(x,capY,Z1-WALL-0.04,0.5,0.06,0.08);lamp(x,0.9,Z1-WALL-0.7,K3000,0.6,6);});
 NPAR=null;
-[7,10.5,14,17.5].forEach(z=>{fixture(-0.04,capY,z,0.08,0.06,0.5);lamp(-0.7,0.1,z,K3000,0.9,6.5);});
+[7,10.5,14,Z1-1.5].forEach(z=>{fixture(-0.04,capY,z,0.08,0.06,0.5);lamp(-0.7,0.1,z,K3000,0.9,6.5);});
 fixture(WALL+0.04,capY,5.4,0.08,0.06,0.5); lamp(WALL+0.7,0.9,5.4,K3000,0.5,5);
 // pier lights tucked under each cap, washing down the yard face and the stair-side face
 [5,8].forEach(q=>{NPAR=NFW[q];const [s0,s1]=FWX[q];[[s0-2,s0,1],[s1,s1+2,-1]].forEach(([a,b,sd])=>{const cx=(a+b)/2, sx=sd>0?b:a;
@@ -1531,15 +1551,15 @@ function dim(a,b,text,sub,when){const line=dimLine(a,b,dimMat,dimGroup);const el
  dim([11,0,Z1-WALL-.25],[11,capT,Z1-WALL-.25],ftin(capT),'seat wall');
  // gazebo
  dim([GXo[0],yl,GZo[0]-.35],[GXo[1],yl,GZo[0]-.35],ftin(GXo[1]-GXo[0]),'posts, outside');
- dim([GCX-ROOF/2,GH+1.1,GCZ-ROOF/2-.1],[GCX+ROOF/2,GH+1.1,GCZ-ROOF/2-.1],ftin(ROOF),'roof');
+ dim([GCX-ROOFX/2,GH+1.1,GCZ-ROOFZ/2-.1],[GCX+ROOFX/2,GH+1.1,GCZ-ROOFZ/2-.1],ftin(ROOFX),'roof');
  dim([GXo[1],yl,GCZ],[PW-WALL,yl,GCZ],ftin(PW-WALL-GXo[1]),'post to wall');
  dim([GCX+2,yl,GZo[1]],[GCX+2,yl,Z1-WALL],ftin(Z1-WALL-GZo[1]),'post to wall');
- dim([GX[0]+.5,0,GZ[0]+.5],[GX[0]+.5,GH,GZ[0]+.5],ftin(GH),'headroom');
+ dim([GX[0]+.7,0,GCZ],[GX[0]+.7,TRUSS_MID,GCZ],ftin(TRUSS_MID),'headroom under truss');
  // circulation
- dim([GCX-3,yl,0],[GCX-3,yl,GCZ-ROOF/2],ftin(GCZ-ROOF/2),'house to roof edge',()=>toHouse);
- dim([GCX-3,yl,Z0],[GCX-3,yl,GCZ-ROOF/2],ftin(GCZ-ROOF/2-Z0),'rock to roof edge',()=>!toHouse);
+ dim([GCX-3,yl,0],[GCX-3,yl,GCZ-ROOFZ/2],ftin(GCZ-ROOFZ/2),'house to roof edge',()=>toHouse);
+ dim([GCX-3,yl,Z0],[GCX-3,yl,GCZ-ROOFZ/2],ftin(GCZ-ROOFZ/2-Z0),'rock to roof edge',()=>!toHouse);
  dim([WALL+COOKD,yl,TCZ-1],[TCX-TW/2-CHD,yl,TCZ-1],ftin(TCX-TW/2-CHD-WALL-COOKD),'aisle',diningHome);
- dim([TCX+TW/2+CHD,yl,TCZ+1],[GCX-ROOF/2,yl,TCZ+1],ftin(GCX-ROOF/2-TCX-TW/2-CHD),'to gazebo',diningHome);
+ dim([TCX+TW/2+CHD,yl,TCZ+1],[GCX-ROOFX/2,yl,TCZ+1],ftin(GCX-ROOFX/2-TCX-TW/2-CHD),'to gazebo',diningHome);
  dim([TCX-TW/2,29/12+.15,TCZ+TL/2+.35],[TCX+TW/2,29/12+.15,TCZ+TL/2+.35],ftin(TW),'× '+ftin(TL)+' table',diningHome);
  // phase 2
  dim([HX0,.6,11],[0,.6,11],ftin(-HX0),'arb bed',()=>P2.bed);
@@ -1942,8 +1962,8 @@ addItem('sectional',SEC_SET,{name:'L-sectional',info:`main run ${ftin(GZ[1]-GZ[0
 addItem('grill',COOK.grill.g,{name:'Weber Spirit E-425',info:`52" wide with side tables · 31" deep`});
 addItem('griddle',COOK.griddle.g,{name:'Weber Slate 36" griddle',info:`71½" wide with side shelves · 28½" deep`});
 addItem('ninja',COOK.ninja.g,{name:'Ninja Woodfire grill on its stand',info:`34" × 26"`});
-addItem('gazebo',{userData:{}},{name:'Yardistry Meridian 12×12 gazebo',info:`posts ${ftin(GXo[1]-GXo[0])} out to out · roof ${ftin(ROOF)} square`});
-addItem('pw',pwGroup,{name:'Privacy wall + 55" TV',info:`Yardistry 12' Meridian privacy wall`});
+addItem('gazebo',{userData:{}},{name:'Yardistry 12×14 Gazebo with Steel',info:`posts ${ftin(POX)} × ${ftin(POZ)} out to out · roof ${ftin(ROOFX)} × ${ftin(ROOFZ)}`});
+addItem('pw',pwGroup,{name:'Privacy wall + 55" TV',info:`Yardistry 12' gazebo privacy wall`});
 addItem('bed',bed,{name:'Arborvitae bed (Phase 2)',info:`retaining-wall bed off the east side`});
 // saved positions from last time on this device
 (function(){const v=savedItems();try{const old=JSON.parse(localStorage.getItem('patio.hostbar')||'null');if(old&&!v.bar&&isFinite(old.x))v.bar=[old.x,old.z,+old.r||0];}catch(_){}
@@ -2037,14 +2057,14 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
   if(accent.visible)add(img('pxlcc'),'Accent course','Pisa XL Smooth · Midnight Charcoal');
   add(img(rc?'pxlcc':'pxlgr'),'Stair risers','Pisa XL Smooth · '+(rc?'Midnight Charcoal':'Granite'));
   add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
-  add(col('#b27a47'),'Gazebo','Yardistry Meridian 12×12 · cedar');
+  add(col('#6e4b36'),'Gazebo','Yardistry 12×14 with Steel · Mocha Brown, black steel trusses, graphite roof');
   if(YSTAIR==='cascade'||YSTAIR==='landcake'||YSTAIR==='terrace'||YSTAIR==='firecircle')add(img('gf'),YSTAIR==='terrace'?'Lower terrace':'Yard landings','Holland Premier · Granite Fusion · 45° herringbone, Endura frame');
   if(YSTAIR==='firecircle'||YSTAIR==='bowl')add(img('gf'),YSTAIR==='bowl'?'Sunken bowl floor':'Walk + fire circle','Holland Premier · Granite Fusion · herringbone, charcoal ring');
   if(YSTAIR==='firecircle'||YSTAIR==='bowl'||YSTAIR==='terrace')add(img('pxlgr'),'Fire pit','Pisa XL Smooth · Granite, round · dark cap, lava rock');
   if(YSTAIR==='cakebed')add(img('pxlgr'),'Corner planters','Pisa XL Smooth · Granite, uncapped · black mulch, low evergreens');
   if(YSTAIR==='cascade')add(img('pxlgr'),'Planting pockets','Pisa XL Smooth · Granite, uncapped · black mulch, low evergreens');
   if(!toHouse)add(col('#8c877d'),'Strip along the house','River rock');
-  if(P2.pw)add(col('#b27a47'),'Privacy wall · Phase 2','Yardistry Meridian privacy wall · 55" TV');
+  if(P2.pw)add(col('#6e4b36'),'Privacy wall · Phase 2','Yardistry 12\' gazebo privacy wall · 55" TV');
   if(P2.bed)add(img('pxlgr'),'Arborvitae bed · Phase 2','Pisa XL Smooth · Granite, uncapped · Emerald Green');
   if(P2.rock&&!toHouse)add(col('#6f8a52'),'Rock-strip plants · Phase 2','small plants + path lights');
   list.innerHTML=R.map(([sw,p,d])=>`<div class="lgr"><i class="lgs" style="${sw}"></i><div><b>${p}</b><span>${d}</span></div></div>`).join('');}
