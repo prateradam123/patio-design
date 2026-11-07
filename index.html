@@ -233,6 +233,11 @@ body.closed .openbtn{display:flex}
       <button data-ystair="firecircle">Fire circle</button>
       <button data-ystair="bowl">Sunken bowl</button>
     </div>
+    <div class="row"><label>Front lawn</label></div>
+    <div class="seg" role="group" aria-label="Front lawn">
+      <button data-fill="0" aria-pressed="true">As is</button>
+      <button data-fill="1">Built up 12"</button>
+    </div>
     <div class="row"><label>Door steps</label></div>
     <div class="seg" role="group" aria-label="Door steps">
       <button data-steps="straight" aria-pressed="true">Straight</button>
@@ -512,11 +517,16 @@ const ST0=14, ST1=19;                           // yard stair: 14'-0" of wall, 5
 // (7-3/4"), shown by dropping the house and the yard (worldG) instead, so everything on the patio stays where it is.
 const DR=SILL/4, FALL=21/12/19, SILL_TO_SOD=33/12, gradeA=z=>-(SILL_TO_SOD-SILL)-FALL*(Math.max(z,0)-Z0);
 let LIFT=0; const grade=z=>gradeA(z)-LIFT;
+// optional built-up lawn: topsoil added along the front of the patio, FILL_IN deep at the wall and tapering back to the
+// existing grade FILL_LEN out; it wraps the front corners and fades out along the sides toward the house walkouts
+let FILL=0; const FILL_IN=1.0, FILL_LEN=12;
+function fillAt(x,z,f=FILL){if(!f)return 0;const d=Math.hypot(Math.max(-x,0,x-PW),Math.max(z-Z1,0));if(d>=FILL_LEN)return 0;
+  const wz=Math.max(0,Math.min(1,(Math.min(z,Z1)-Z0-3)/(Z1-Z0-3))),t=d/FILL_LEN;return f*wz*(1-t*t*(3-2*t));}
 const ground=z=>grade(z);
 
 // ground
 const _w0=scene.children.length;
-const GND={mesh:null,feat:null};
+const GND={mesh:null,feat:null,fill:0};
 (function(){const g=new T.PlaneGeometry(260,220,260,220);g.rotateX(-Math.PI/2);g.translate(17.5,0,60);
  const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setY(i,ground(p.getZ(i))-0.03);g.computeVertexNormals();
  const m=new T.Mesh(g,M.grass);m.receiveShadow=true;scene.add(m);GND.mesh=m;})();
@@ -908,7 +918,7 @@ function fireTick(t,dark){if(!fireGroup.visible||!furn.visible)return;
 let YSTAIR='straight';
 const SV={straight:{3:{g:YARD[3].g,lt:[]},2:{g:YARD[2].g,lt:[]}}}, PITL=[]; let STB=null;
 (function(){const TD=1, SCX=(ST0+ST1)/2, CD=14/12;
- const gk=k=>z=>gradeA(z)-(k===2?DR:0);
+ const gk=k=>z=>gradeA(z)-(k===2?DR:0)+fillAt(SCX,z);
  const best=(ns,f,t)=>{let b=null;ns.forEach(n=>{const r=f(n);if(r>0&&(!b||Math.abs(r-t)<Math.abs(b[1]-t)))b=[n,r];});return b;};
  // a step or landing: block from below grade up under the coping, Endura fullnose on the exposed edges (f = yard side,
  // e = east end, w = west end), herringbone Holland Premier inside the frame when o.inner
@@ -968,6 +978,10 @@ function firePit(G,cx,cz,TL){const R=1.85, H=1.15;
      box(sd*1.0-.06,sd*1.0+.06,0,1.95,.85,1.0,W,P);box(sd*.85-.06,sd*.85+.06,0,1.05,-.85,-.7,W,P);});
    const bk=new T.Mesh(new T.BoxGeometry(1.8,2.6,.09),W);bk.rotation.x=-.33;bk.position.set(0,2.15,-1.05);bk.castShadow=true;c.add(bk);}
  const B={
+  straight(G,k,L){const g=gk(k),[n,r]=best([2,3,4,5,6],n=>-g(Z1+(n-1)*TD)/n,.55),P={parent:G};openTread(G,ST0,ST1);
+    for(let i=1;i<n;i++){const top=-r*i,z0=Z1+(i-1)*TD,z1=Z1+i*TD;box(ST0,ST1,-6.5,top-COP,z0,z1,M.riser,{...P,uo:ST0,vo:top-COP});
+      cop(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:ST0,vo:z0-.04},'+z');nose(L,ST0+1.1,top,z1);nose(L,ST1-1.1,top,z1);}
+    return {n,r};},
   cake(G,k,L){const g=gk(k),[n,r]=best([3,4,5,6,7],n=>-g(Z1+(n-1)*TD)/n,.52);openTread(G,ST0,ST1);
     for(let i=1;i<n;i++){const top=-r*i;slab(G,ST0-i*TD,ST1+i*TD,Z1,Z1+i*TD,top,'few',{cd:TD});nose(L,SCX-1.5,top,Z1+i*TD);nose(L,SCX+1.5,top,Z1+i*TD);}
     return {n,r};},
@@ -1054,19 +1068,20 @@ function firePit(G,cx,cz,TL){const R=1.85, H=1.15;
  STB=B;
 })();
 // options are built the first time they're picked (keeps the page load the same as before)
-function ensureStair(v,k){if(SV[v]&&SV[v][k])return SV[v][k];const G=new T.Group(),lt=[];G.visible=false;scene.add(G);const info=STB[v](G,k,lt);
+function ensureStair(v,k){if(SV[v]&&SV[v][k])return SV[v][k];const G=new T.Group(),lt=[];G.visible=false;scene.add(G);const info=STB[v.split('@')[0]](G,k,lt);
   const N=new T.Group();N.visible=false;nightGroup.add(N);NPAR=N;let zmax=Z1;lt.forEach(([x,y,z])=>{fixture(x,y,z,0.35,0.08,0.04);zmax=Math.max(zmax,z);});
   if(zmax>Z1+5)lamp(SCX0,-1.6,(Z1+zmax)/2+1,K2700,0.9,8);NPAR=null;(SV[v]=SV[v]||{})[k]={g:G,lt,info,night:N,feat:G.userData.feat||null};return SV[v][k];}
-function applyStair(){const k=LIFT>0?2:3;if(YSTAIR!=='straight')ensureStair(YSTAIR,k);
-  Object.entries(SV).forEach(([v,o])=>[3,2].forEach(n=>{if(!o[n])return;const on=v===YSTAIR&&n===k;o[n].g.visible=on;if(o[n].night)o[n].night.visible=on;}));
+function applyStair(){const k=LIFT>0?2:3,key=YSTAIR==='straight'&&!FILL?'straight':YSTAIR+(FILL?'@f':'');if(key!=='straight')ensureStair(key,k);
+  Object.entries(SV).forEach(([v,o])=>[3,2].forEach(n=>{if(!o[n])return;const on=v===key&&n===k;o[n].g.visible=on;if(o[n].night)o[n].night.visible=on;}));
   const w=YSTAIR==='wide'?8:5;[5,8].forEach(q=>{FW[q].visible=ACC[q].visible=q===w;if(typeof NFW!=='undefined')NFW[q].visible=q===w;});
-  const cur=YSTAIR!=='straight'?SV[YSTAIR][k]:null, f=cur&&cur.feat||null;if(GND.feat!==f){GND.feat=f;applyGround();}}
+  const cur=key!=='straight'?SV[key][k]:null, f=cur&&cur.feat||null;if(GND.feat!==f||GND.fill!==FILL){GND.feat=f;GND.fill=FILL;applyGround();}}
 // reshape the lawn for the options that are set into it (fire circle, sunken bowl); otherwise the measured yard grade
 function applyGround(){const m=GND.mesh,p=m.geometry.attributes.position,F=GND.feat;
-  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i);let h=gradeA(z)-LIFT;
+  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i);let h=gradeA(z)-LIFT+fillAt(x,z);
     if(F&&z>Z1-8&&z<Z1+22&&x>-6&&x<44)for(const f of F){const q=f.s(x,z);if(q<1){const w=q<=0?0:q*q*(3-2*q);h=f.t+(h-f.t)*w;}}
     p.setY(i,h+LIFT-0.03);}
   p.needsUpdate=true;m.geometry.computeVertexNormals();m.geometry.computeBoundingSphere();}
+window.__stairNow=()=>{const k=LIFT>0?2:3,key=YSTAIR==='straight'&&!FILL?'straight':YSTAIR+(FILL?'@f':'');return key==='straight'?{n:YARD[k].n,r:YARD[k].rise}:SV[key][k].info;};
 window.__stairInfo=()=>Object.fromEntries(Object.keys(STB).map(v=>[v,{3:ensureStair(v,3).info,2:ensureStair(v,2).info}]));
 
 // cook line on the east wall, from the walkout to the front corner: Spirit E-425, Slate 36" griddle, Ninja Woodfire on its stand
@@ -1347,6 +1362,9 @@ window.__lift=k=>{setLift(k);press('[data-lift]',document.querySelector(`[data-l
 function setYStair(v){if(v!=='straight'&&!STB[v])return;YSTAIR=v;applyStair();}
 $$('[data-ystair]').forEach(b=>b.addEventListener('click',()=>{setYStair(b.dataset.ystair);press('[data-ystair]',b);}));
 window.__ystair=v=>{setYStair(v);press('[data-ystair]',document.querySelector(`[data-ystair="${v}"]`));};
+function setFill(v){FILL=+v?FILL_IN:0;applyStair();}
+$$('[data-fill]').forEach(b=>b.addEventListener('click',()=>{setFill(b.dataset.fill);press('[data-fill]',b);}));
+window.__fill=v=>{setFill(v);press('[data-fill]',document.querySelector(`[data-fill="${v}"]`));};
 $$('[data-riser]').forEach(b=>b.addEventListener('click',()=>{setRiser(b.dataset.riser);press('[data-riser]',b);}));
 window.__riser=k=>{setRiser(k);press('[data-riser]',document.querySelector(`[data-riser="${k}"]`));};
 const accSwitch=sw('t-accent',on=>{accent.visible=on;bedAccent.visible=on;pavHouseAcc.visible=on;});
@@ -1543,9 +1561,10 @@ function dim(a,b,text,sub,when){const line=dimLine(a,b,dimMat,dimGroup);const el
  dim([HX0,.4,-.25],[0,.4,-.25],ftin(-HX0),'in from corner'); dim([PW,.4,-.25],[HX1,.4,-.25],ftin(HX1-PW),'');
  // walls
  [3,2].forEach(k=>{const L=k===2?DR:0, w=()=>(LIFT>0)===(k===2), g=z=>gradeA(z)-L, n=YARD[k].n;
-   dim([PW+.55,g(Z1),Z1+.3],[PW+.55,capT,Z1+.3],ftin(capT-g(Z1)),'wall, lawn to cap',w);
-   dim([PW+1.6,g(Z1),Z1+.3],[PW+1.6,0,Z1+.3],ftin(-g(Z1)),'patio above lawn',w);
-   dim([ST0,g(Z1+n)+.1,Z1+n],[ST1,g(Z1+n)+.1,Z1+n],ftin(ST1-ST0),`stair · ${n} risers @ ${ftin(YARD[k].rise)}`,()=>w()&&YSTAIR==='straight');
+   [0,FILL_IN].forEach(fl=>{const gf=z=>g(z)+fillAt(PW+.55,z,fl),wf=()=>w()&&FILL===fl;
+     dim([PW+.55,gf(Z1),Z1+.3],[PW+.55,capT,Z1+.3],ftin(capT-gf(Z1)),'wall, lawn to cap',wf);
+     dim([PW+1.6,gf(Z1),Z1+.3],[PW+1.6,0,Z1+.3],ftin(-gf(Z1)),'patio above lawn',wf);});
+   dim([ST0,g(Z1+n)+.1,Z1+n],[ST1,g(Z1+n)+.1,Z1+n],ftin(ST1-ST0),`stair · ${n} risers @ ${ftin(YARD[k].rise)}`,()=>w()&&YSTAIR==='straight'&&!FILL);
    dim([BAY0-.45,0,Z0+.1],[BAY0-.45,SILL-L,Z0+.1],ftin(SILL-L),`door sill above patio · ${k} steps`,w);
    dim([BAY1+.4,yl,Z0],[BAY1+.4,yl,Z0+2.5+(k-1)*11/12],ftin(2.5+(k-1)*11/12),'door steps',w);});
  dim([11,0,Z1-WALL-.25],[11,capT,Z1-WALL-.25],ftin(capT),'seat wall');
@@ -2059,6 +2078,7 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
   add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
   add(col('#6e4b36'),'Gazebo','Yardistry 12×14 with Steel · Mocha Brown, black steel trusses, graphite roof');
   if(YSTAIR==='cascade'||YSTAIR==='landcake'||YSTAIR==='terrace'||YSTAIR==='firecircle')add(img('gf'),YSTAIR==='terrace'?'Lower terrace':'Yard landings','Holland Premier · Granite Fusion · 45° herringbone, Endura frame');
+  if(FILL)add(col('#6f9a4f'),'Built-up lawn','Topsoil and sod · 12" at the wall, tapering out 12\'');
   if(YSTAIR==='firecircle'||YSTAIR==='bowl')add(img('gf'),YSTAIR==='bowl'?'Sunken bowl floor':'Walk + fire circle','Holland Premier · Granite Fusion · herringbone, charcoal ring');
   if(YSTAIR==='firecircle'||YSTAIR==='bowl'||YSTAIR==='terrace')add(img('pxlgr'),'Fire pit','Pisa XL Smooth · Granite, round · dark cap, lava rock');
   if(YSTAIR==='cakebed')add(img('pxlgr'),'Corner planters','Pisa XL Smooth · Granite, uncapped · black mulch, low evergreens');
@@ -2089,7 +2109,7 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
  return {refresh,areas};})();
 window.__legend=()=>{LEG.refresh();return {rows:[...document.querySelectorAll('#lgList .lgr b')].map(b=>b.textContent),area:document.getElementById('lgArea').innerText,a:LEG.areas()};};
 const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person','t-legend'];
-const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps','lift','ystair'];
+const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps','lift','ystair','fill'];
 const r2=v=>Math.round(v*100)/100;
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const dec=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
@@ -2130,6 +2150,7 @@ let hashT=0;
 function stateChanged(){if(!ON_PAGES)return;clearTimeout(hashT);hashT=setTimeout(()=>{if(anim||glide)return stateChanged();try{history.replaceState(null,'','#s='+enc(getState()));}catch(_){}},900);}
 ['pointerup','wheel','click','keyup'].forEach(t=>addEventListener(t,()=>stateChanged(),{passive:true}));
 function fromHash(){const h=location.hash.match(/[#&]s=([\w-]+)/);if(!h)return;try{setState(dec(h[1]));}catch(e){console.warn('bad view link',e);}}
+window.__lift(2); window.__ystair('cake');
 fromHash(); addEventListener('hashchange',fromHash);
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(_){}
   try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(_){return false;}}
