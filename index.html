@@ -2150,7 +2150,7 @@ let hashT=0;
 function stateChanged(){if(!ON_PAGES)return;clearTimeout(hashT);hashT=setTimeout(()=>{if(anim||glide)return stateChanged();try{history.replaceState(null,'','#s='+enc(getState()));}catch(_){}},900);}
 ['pointerup','wheel','click','keyup'].forEach(t=>addEventListener(t,()=>stateChanged(),{passive:true}));
 function fromHash(){const h=location.hash.match(/[#&]s=([\w-]+)/);if(!h)return;try{setState(dec(h[1]));}catch(e){console.warn('bad view link',e);}}
-window.__lift(2); window.__ystair('cake');
+window.__lift(2); window.__steps('cake');
 fromHash(); addEventListener('hashchange',fromHash);
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(_){}
   try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(_){return false;}}
