@@ -219,7 +219,7 @@ body.closed .openbtn{display:flex}
     <div class="row"><label>Patio height</label></div>
     <div class="seg" role="group" aria-label="Patio height">
       <button data-lift="3" aria-pressed="true">3 door steps</button>
-      <button data-lift="2">2 door steps (+13⅝")</button>
+      <button data-lift="2">2 door steps (+7¾")</button>
     </div>
     <div class="row"><label>Yard stairs</label></div>
     <div class="seg wrap" role="group" aria-label="Yard stairs">
@@ -515,9 +515,7 @@ const ST0=14, ST1=19;                           // yard stair: 14'-0" of wall, 5
 // slider sill down to the sod right below it (at the bay face). The model is built for the 3-step plan (4 risers, sill 31"
 // above the patio, so the patio sits 2" above the ground at the door). The 2-step option lifts the patio one riser
 // (7-3/4"), shown by dropping the house and the yard (worldG) instead, so everything on the patio stays where it is.
-// DR: door riser of the 3-step plan. LIFT2: how much higher the contractor's 2-step patio sits - one door riser plus the
-// extra course of Pisa XL (5-7/8") he's adding - which leaves 3 even risers of about 5-3/4" from the sill to the patio
-const DR=SILL/4, XLC_IN=5.875/12, LIFT2=DR+XLC_IN, DR2=(SILL-LIFT2)/3, FALL=21/12/19, SILL_TO_SOD=33/12, gradeA=z=>-(SILL_TO_SOD-SILL)-FALL*(Math.max(z,0)-Z0);
+const DR=SILL/4, FALL=21/12/19, SILL_TO_SOD=33/12, gradeA=z=>-(SILL_TO_SOD-SILL)-FALL*(Math.max(z,0)-Z0);
 let LIFT=0; const grade=z=>gradeA(z)-LIFT;
 // optional built-up lawn: topsoil added along the front of the patio, FILL_IN deep at the wall and tapering back to the
 // existing grade FILL_LEN out; it wraps the front corners and fades out along the sides toward the house walkouts
@@ -629,7 +627,7 @@ seatRun(0,WALL,5,Z1,{e:(COPD-WALL)/2,from:'end'}); seatRun(PW-WALL,PW,5,Z1,{e:(C
 [[-1.17,0],[PW,PW+1.17]].forEach(([a,b])=>{box(a,b,-3,-0.68,Z0,5,M.riser,{vo:-0.68});cop(a-.04,b+.04,-0.68,-0.68+COP,Z0,5,COPZ,{uo:a,vo:Z0},a<0?'-x':'+x');});
 // with the patio lifted a riser (2 door steps) the side yard is that much lower, so each walkout gets a second cap step
 const walkB=new T.Group(); walkB.visible=false; scene.add(walkB);
-[[-2.34,-1.17],[PW+1.17,PW+2.34]].forEach(([a,b])=>{const t=-0.68-LIFT2*0.42;box(a,b,-3.5,t,Z0,5,M.riser,{vo:t,parent:walkB});cop(a-.04,b+.04,t,t+COP,Z0,5,COPZ,{uo:a,vo:Z0,parent:walkB},a<0?'-x':'+x');});
+[[-2.34,-1.17],[PW+1.17,PW+2.34]].forEach(([a,b])=>{const t=-0.68-DR*0.72;box(a,b,-3.5,t,Z0,5,M.riser,{vo:t,parent:walkB});cop(a-.04,b+.04,t,t+COP,Z0,5,COPZ,{uo:a,vo:Z0,parent:walkB},a<0?'-x':'+x');});
 // front wall: 12'-0" + 2' pier + 5' stair + 2' pier + 14'-0"
 // FW[5] is the drawn 5' stair opening; FW[8] opens it to 8' (2' piers move out 1'-6" each side) for the wide garden stair option
 const FW={5:new T.Group(),8:new T.Group()}, FWX={5:[ST0,ST1],8:[ST0-1.5,ST1+1.5]}; scene.add(FW[5],FW[8]); FW[8].visible=false;
@@ -668,10 +666,9 @@ retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBo
   box(b.min.x-e,b.max.x+e,BASE-XLC,BASE,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:m.userData.fw?ACC[m.userData.fw]:accent,cast:false});});
 
 // yard stair: 5 risers of ~7-5/8" from the patio to the lawn, 12" treads, Pisa Granite risers + Endura treads
-// yard risers sized to the measured grade: 4 @ ~6" with 3 door steps; with the 2-step patio (a riser plus a course higher) the count that lands closest to 6-1/2"
+// yard risers sized to the measured grade: 4 @ ~6" with 3 door steps, 5 @ ~6-5/8" with the patio a riser higher
 const YARD={3:{n:4,g:new T.Group()},2:{n:5,g:new T.Group()}};
-{const c=[5,6,7].map(n=>({n,r:(LIFT2-gradeA(Z1+n-1))/n})).sort((a,b)=>Math.abs(a.r-.54)-Math.abs(b.r-.54))[0];YARD[2].n=c.n;}
-YARD[3].rise=-gradeA(Z1+YARD[3].n-1)/YARD[3].n; YARD[2].rise=(LIFT2-gradeA(Z1+YARD[2].n-1))/YARD[2].n;
+YARD[3].rise=-gradeA(Z1+YARD[3].n-1)/YARD[3].n; YARD[2].rise=(DR-gradeA(Z1+YARD[2].n-1))/YARD[2].n;
 scene.add(YARD[3].g,YARD[2].g); YARD[2].g.visible=false;
 const NR=YARD[3].n, RISE=YARD[3].rise;
 // treads: one piece deep (no seam across the step), joints centred on the stair so each tread is a full 24" unit in the
@@ -718,7 +715,7 @@ const phS=new T.Group(), phW=new T.Group(); pavHouse.add(phS,phW); phW.visible=f
 const STEPG={}; [3,2].forEach(n=>{const o=STEPG[n]={S:new T.Group(),W:new T.Group(),pS:new T.Group(),pW:new T.Group()};
   stepsS.add(o.S);stepsW.add(o.W);phS.add(o.pS);phW.add(o.pW);if(n===2)o.S.visible=o.W.visible=o.pS.visible=o.pW.visible=false;});
 const CAKE_LW=7;   // wedding-cake landing: 7'-0" wide, centred on the 6' slider (6" past the door on each side)
-[3,2].forEach(NS=>{const r=NS===3?DR:DR2, TD=11/12, CU=23.625/12, NT=NS-1, SL=(NT+2)*r, gS=STEPG[NS].S, gW=STEPG[NS].W;
+[3,2].forEach(NS=>{const r=DR, TD=11/12, CU=23.625/12, NT=NS-1, SL=(NT+2)*r, gS=STEPG[NS].S, gW=STEPG[NS].W;
  // coping joints: centre a joint or a full unit on the steps, whichever leaves the bigger end cuts
  const uoFor=w=>{const cutJ=((w/2)%CU), cutU=(((w-CU)/2)%CU);return cutJ>=cutU?BAYC:BAYC-CU/2;};
  // 30" landing framed in coping (full nosing course across the front, a piece turned front-to-back at each end)
@@ -921,7 +918,7 @@ function fireTick(t,dark){if(!fireGroup.visible||!furn.visible)return;
 let YSTAIR='straight';
 const SV={straight:{3:{g:YARD[3].g,lt:[]},2:{g:YARD[2].g,lt:[]}}}, PITL=[]; let STB=null;
 (function(){const TD=1, SCX=(ST0+ST1)/2, CD=14/12;
- const gk=k=>z=>gradeA(z)-(k===2?LIFT2:0)+fillAt(SCX,z);
+ const gk=k=>z=>gradeA(z)-(k===2?DR:0)+fillAt(SCX,z);
  const best=(ns,f,t)=>{let b=null;ns.forEach(n=>{const r=f(n);if(r>0&&(!b||Math.abs(r-t)<Math.abs(b[1]-t)))b=[n,r];});return b;};
  // a step or landing: block from below grade up under the coping, Endura fullnose on the exposed edges (f = yard side,
  // e = east end, w = west end), herringbone Holland Premier inside the frame when o.inner
@@ -1240,7 +1237,7 @@ window.__audit={
   'yard riser (in)':RISE*12,'front wall showing at the corner (in)':-grade(Z1)*12,'door steps depth into patio':2.5+22/12,
   'front wall, lawn to top of cap (in)':(-grade(Z1)+SEATTOP+COP)*12,'side wall showing at house end (in)':-grade(Z0)*12,
   'patio above grade at house (in)':-grade(0)*12,'stair foot below patio (in)':-grade(Z1+NR-1)*12,'border width (in)':B*12,
-  '2-step: door riser (in)':DR2*12,'2-step: patio above grade at the door (in)':(LIFT2-gradeA(Z0))*12,'2-step: front wall showing (in)':(LIFT2-gradeA(Z1))*12,
+  '2-step: door riser (in)':DR*12,'2-step: patio above grade at the door (in)':(DR-gradeA(Z0))*12,'2-step: front wall showing (in)':(DR-gradeA(Z1))*12,
   '2-step: yard risers':YARD[2].n,'2-step: yard riser (in)':YARD[2].rise*12,
 };
 
@@ -1354,10 +1351,10 @@ $$('[data-steps]').forEach(b=>b.addEventListener('click',()=>{setSteps(b.dataset
 window.__steps=k=>{setSteps(k);press('[data-steps]',document.querySelector(`[data-steps="${k}"]`));};
 // patio height: 3 door steps (as drawn) or 2 door steps with the patio one riser (7-3/4") higher and one more yard step.
 // The patio stays put; the house, lawn and neighbor drop by the riser, and the step sets swap.
-function setLift(n){n=+n;const was=LIFT;LIFT=n===2?LIFT2:0;const d=LIFT-was;worldG.position.y=-LIFT;
+function setLift(n){n=+n;const was=LIFT;LIFT=n===2?DR:0;const d=LIFT-was;worldG.position.y=-LIFT;
   [3,2].forEach(k=>{const on=k===n,o=STEPG[k];o.S.visible=o.W.visible=o.pS.visible=o.pW.visible=on;ND[k].visible=on;});applyStair();
   walkB.visible=n===2; doorLamp.position.y=SILL+4-LIFT;
-  ['yard','stairs','east','west'].forEach(k=>V[k].p[1]=eye(V[k].p[2])); V.door.p[1]=SILL-LIFT-(LIFT?DR2:DR)+EYE; if(V.neighbor)V.neighbor.p[1]=ground(27)+7.1;
+  ['yard','stairs','east','west'].forEach(k=>V[k].p[1]=eye(V[k].p[2])); V.door.p[1]=SILL-LIFT-DR+EYE; if(V.neighbor)V.neighbor.p[1]=ground(27)+7.1;
   // standing in the yard, you stay on the lawn (it just dropped); on the patio or the steps you stay where you are
   if(d&&mode==='eye'){const c=camera.position;if(c.z>Z1+0.3||c.x<-0.2||c.x>PW+0.2||c.z<0)c.y-=d;}}
 $$('[data-lift]').forEach(b=>b.addEventListener('click',()=>{setLift(b.dataset.lift);press('[data-lift]',b);}));
@@ -1423,7 +1420,7 @@ fixture(WALL+0.04,capY,5.4,0.08,0.06,0.5); lamp(WALL+0.7,0.9,5.4,K3000,0.5,5);
 const NL={3:new T.Group(),2:new T.Group()}, ND={3:new T.Group(),2:new T.Group()}; nightGroup.add(NL[3],NL[2],ND[3],ND[2]); NL[2].visible=ND[2].visible=false;
 const SCX0=(ST0+ST1)/2;
 [3,2].forEach(k=>{NPAR=NL[k];for(let i=0;i<YARD[k].n;i++){const top=-YARD[k].rise*i, z=Z1+i+0.01;[ST0+1.1,ST1-1.1].forEach(x=>fixture(x,top-COP-0.22,z,0.35,0.08,0.04));}
- NPAR=ND[k];for(let t=1;t<k+1;t++)[BAY0+1.5,BAY1-1.5].forEach(x=>fixture(x,(k+1-t)*(k===3?DR:DR2)-COP-0.22,Z0+2.5+(t-1)*11/12+0.07,0.35,0.08,0.04));
+ NPAR=ND[k];for(let t=1;t<k+1;t++)[BAY0+1.5,BAY1-1.5].forEach(x=>fixture(x,(k+1-t)*DR-COP-0.22,Z0+2.5+(t-1)*11/12+0.07,0.35,0.08,0.04));
  SV.straight[k].night=NL[k];});NPAR=null;
 lamp(SCX0,-0.6,Z1+1.6,K2700,1.0,6); lamp(SCX0,-2.0,Z1+3.6,K2700,1.0,6);
 lamp(BAYC,1.2,Z0+5.2,K2700,0.9,7);
@@ -1563,7 +1560,7 @@ function dim(a,b,text,sub,when){const line=dimLine(a,b,dimMat,dimGroup);const el
  dim([-.5,capT+.1,Z0],[-.5,capT+.1,Z1],ftin(Z1-Z0),'patio depth',()=>!toHouse);
  dim([HX0,.4,-.25],[0,.4,-.25],ftin(-HX0),'in from corner'); dim([PW,.4,-.25],[HX1,.4,-.25],ftin(HX1-PW),'');
  // walls
-  [3,2].forEach(k=>{const L=k===2?LIFT2:0, w=()=>(LIFT>0)===(k===2), g=z=>gradeA(z)-L, n=YARD[k].n;
+ [3,2].forEach(k=>{const L=k===2?DR:0, w=()=>(LIFT>0)===(k===2), g=z=>gradeA(z)-L, n=YARD[k].n;
    [0,FILL_IN].forEach(fl=>{const gf=z=>g(z)+fillAt(PW+.55,z,fl),wf=()=>w()&&FILL===fl;
      dim([PW+.55,gf(Z1),Z1+.3],[PW+.55,capT,Z1+.3],ftin(capT-gf(Z1)),'wall, lawn to cap',wf);
      dim([PW+1.6,gf(Z1),Z1+.3],[PW+1.6,0,Z1+.3],ftin(-gf(Z1)),'patio above lawn',wf);});
