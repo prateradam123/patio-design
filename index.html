@@ -216,6 +216,11 @@ body.closed .openbtn{display:flex}
       <button data-edge="pavers" aria-pressed="true">Pavers to the house</button>
       <button data-edge="rock">2' river rock</button>
     </div>
+    <div class="row"><label>Gazebo</label></div>
+    <div class="seg" role="group" aria-label="Gazebo orientation">
+      <button data-gzrot="0">Long side along house</button>
+      <button data-gzrot="1">Long side toward yard</button>
+    </div>
     <div class="row"><label>Patio height</label></div>
     <div class="seg" role="group" aria-label="Patio height">
       <button data-lift="3" aria-pressed="true">3 door steps</button>
@@ -768,9 +773,13 @@ const furn=new T.Group(); scene.add(furn);
 const secGroup=new T.Group(), lsGroup=new T.Group(); furn.add(secGroup,lsGroup);
 let LS_FX=0;   // fire-table centre (x) in the loveseat + swivels layout
 const MOCHA=new T.MeshStandardMaterial({color:0x6e4b36,roughness:.78}), GSTEEL=new T.MeshStandardMaterial({color:0x1c1d1f,roughness:.42,metalness:.55});
-const PX=7.5/12, PZ=5.5/12, PO=PZ, POX=12+10.375/12, POZ=10+10.375/12, POUT=POZ;
+// Orientation: long side along the house (default) or turned so the long side runs out toward the yard. It is read at
+// load (link #gz=r, or remembered for the tab); the Gazebo control reloads the page in the same view with the other one.
+const GZROT=(()=>{const h=/[#&]gz=r/.test(location.hash);try{const v=sessionStorage.getItem('gzrot');return v==null?h:v==='1';}catch(_){return h;}})();
+const GLONG=12+10.375/12, GSHORT=10+10.375/12, ROOFL=14+1/12, ROOFS=12+1/12;
+const PX=GZROT?5.5/12:7.5/12, PZ=GZROT?7.5/12:5.5/12, PO=PZ, POX=GZROT?GSHORT:GLONG, POZ=GZROT?GLONG:GSHORT, POUT=GSHORT;
 const GXo=[PW-WALL-1-POX, PW-WALL-1], GZo=[Z1-WALL-1-POZ, Z1-WALL-1];
-const GX=[GXo[0]+PX/2,GXo[1]-PX/2], GZ=[GZo[0]+PZ/2,GZo[1]-PZ/2], GH=7.3, GBD=.62, ROOFX=14+1/12, ROOFZ=12+1/12, ROOF=ROOFZ, GPEAK=10.4;
+const GX=[GXo[0]+PX/2,GXo[1]-PX/2], GZ=[GZo[0]+PZ/2,GZo[1]-PZ/2], GH=7.3, GBD=.62, ROOFX=GZROT?ROOFS:ROOFL, ROOFZ=GZROT?ROOFL:ROOFS, ROOF=ROOFS, GPEAK=10.4;
 const GCX=(GXo[0]+GXo[1])/2, GCZ=(GZo[0]+GZo[1])/2, TRUSS_MID=7+.25/12, TRUSS_END=6.3;
 // optional gazebo border: one soldier course of the same Holland Premier squaring off the gazebo. On the west and yard
 // sides the perimeter border already does it (about 4" outside the posts there), so just two runs are added on the
@@ -801,7 +810,8 @@ const GZ_N0=scene.children.length;
  GZ.forEach(z=>truss(true,z,GX[0]+PX/2,GX[1]-PX/2));
  GX.forEach(x=>truss(false,x,GZ[0]+PZ/2,GZ[1]-PZ/2));
  // 21-degree hip roof with a short ridge along the long side, graphite aluminum standing seam
- (function(){const y0=GH+GBD+.08, RH=GPEAK-y0, hx=ROOFX/2, hz=ROOFZ/2, rr=hx-hz;
+ const _rf0=scene.children.length;   // the roof is built long-side-along-x and turned 90 degrees when the gazebo is turned
+ (function(){const y0=GH+GBD+.08, RH=GPEAK-y0, hx=ROOFL/2, hz=ROOFS/2, rr=hx-hz;
   const A1=new T.Vector3(GCX-rr,y0+RH,GCZ), A2=new T.Vector3(GCX+rr,y0+RH,GCZ);
   const C=[[-hx,-hz],[hx,-hz],[hx,hz],[-hx,hz]].map(([dx,dz])=>new T.Vector3(GCX+dx,y0,GCZ+dz));
   const sc=document.createElement('canvas');sc.width=128;sc.height=8;const g=sc.getContext('2d');      // one 16" panel: flat pan + standing seam
@@ -832,8 +842,9 @@ const GZ_N0=scene.children.length;
     beam(new T.Vector3(x,y0,GCZ+sz*hz),new T.Vector3(Math.max(A1.x,Math.min(A2.x,x)),y0+RH,GCZ),.18,.3,MOCHA,.24);}));
   [A1,A2].forEach((A,j)=>beam(new T.Vector3(GCX+(j?hx:-hx),y0,GCZ),A,.18,.3,MOCHA,.24));
   // two cedar roof ties across the short span
-  [-1,1].forEach(s=>{const x=GCX+s*2.6;box(x-.12,x+.12,GH+GBD-.45,GH+GBD,GZ[0]+.19,GZ[1]-.19,MOCHA);});
+  [-1,1].forEach(s=>{const x=GCX+s*2.6;box(x-.12,x+.12,GH+GBD-.45,GH+GBD,GCZ-GSHORT/2+.42,GCZ+GSHORT/2-.42,MOCHA);});
   for(let k=0;k<4;k++){const c1=C[k],c2=C[(k+1)%4];beam(c1,c2,.08,.3,cap,.1);}})();            // graphite fascia
+ if(GZROT){const rg=new T.Group();rg.position.set(GCX,0,GCZ);scene.add(rg);scene.children.slice(_rf0,scene.children.length-1).forEach(o=>rg.attach(o));rg.rotation.y=Math.PI/2;}
  // L-sectional facing west toward the privacy wall/TV: main run along the east posts, return along the house side
  const x0=GX[0]+.45, x1=x0+2.9, z0=GZ[0]+.6, z1=GZ[1]-.6, secSet=new T.Group(); secGroup.add(secSet); const P={parent:secSet};
  box(x0,x1,0,1.35,z0,z1,M.furnFrame,P); box(x0+.55,x1,1.35,1.7,z0+.05,z1-.05,M.cushion,P); box(x0,x0+.6,1.35,2.65,z0,z1,M.cushion,P);
@@ -2149,14 +2160,19 @@ function applyPartial(o){STATE_APPLYING=true;try{
 function setState(st){const o={sg:{},sw:{},m:st.m,it:st.it,c:st.c,e:st.e,tv:st.tv};
   (st.sg||[]).forEach((v,i)=>{if(v&&SGL[i])o.sg[SGL[i]]=v;}); (st.sw||'').split('').forEach((v,i)=>{if(SWL[i])o.sw[SWL[i]]=v;});
   applyPartial(o);}
-function shareURL(){return PAGES_URL+'#s='+enc(getState());}
+function shareURL(){return PAGES_URL+'#s='+enc(getState())+(GZROT?'&gz=r':'');}
 // on the GitHub page, the address bar always holds the current view, so a reload (or a copied address) comes back to it
 let hashT=0;
-function stateChanged(){if(!ON_PAGES)return;clearTimeout(hashT);hashT=setTimeout(()=>{if(anim||glide)return stateChanged();try{history.replaceState(null,'','#s='+enc(getState()));}catch(_){}},900);}
+function stateChanged(){if(!ON_PAGES)return;clearTimeout(hashT);hashT=setTimeout(()=>{if(anim||glide)return stateChanged();try{history.replaceState(null,'','#s='+enc(getState())+(GZROT?'&gz=r':''));}catch(_){}},900);}
 ['pointerup','wheel','click','keyup'].forEach(t=>addEventListener(t,()=>stateChanged(),{passive:true}));
 function fromHash(){const h=location.hash.match(/[#&]s=([\w-]+)/);if(!h)return;try{setState(dec(h[1]));}catch(e){console.warn('bad view link',e);}}
 window.__lift(2); window.__steps('cake');
 fromHash(); addEventListener('hashchange',fromHash);
+press('[data-gzrot]',document.querySelector(`[data-gzrot="${GZROT?1:0}"]`));
+$$('[data-gzrot]').forEach(b=>b.addEventListener('click',()=>{const r=b.dataset.gzrot==='1';if(r===GZROT)return;
+  try{sessionStorage.setItem('gzrot',r?'1':'0');}catch(_){}
+  const h='#s='+enc(getState())+(r?'&gz=r':'');try{history.replaceState(null,'',h);}catch(_){location.hash=h;}
+  toast('Turning the gazebo…');setTimeout(()=>location.reload(),60);}));
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(_){}
   try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(_){return false;}}
 document.getElementById('shareBtn').addEventListener('click',async()=>{const url=shareURL();
