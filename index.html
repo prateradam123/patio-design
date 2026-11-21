@@ -614,9 +614,10 @@ const retain=[];
 // laid course by course, each one stepping back toward the patio from the one below; the top course stays on the design
 // line, so the patio, seat walls and coping don't move. o: nx/px/nz/pz = which faces are exposed (step out going down).
 const XSB=5.875*Math.tan(3*Math.PI/180)/12;
-// Yard stair treads as built: Unilock Pisa XL Smooth coping in Midnight Charcoal - square units 15-3/4" x 12-7/8" x 3"
-// with a small chamfer on the top front edge (not fullnose), set flush with the riser face, joints centred on the stair.
-const TCAP={L:15.75/12,D:12.875/12,H:3/12,c:.3/12,gap:.012};
+// Yard stair treads as built: Unilock Pisa XL Smooth coping in Midnight Charcoal (15-3/4" x 12-7/8" x 3", small chamfer
+// on the top edge, not fullnose), turned lengthwise and cut so each tread runs 12" back from a 1" overhang past the riser,
+// factory edge to the front; units 12-7/8" wide with the joints centred on the stair.
+const TCAP={L:12.875/12,D:13/12,H:3/12,c:.3/12,gap:.012,over:1/12};
 const TCAP_MAT=new T.MeshStandardMaterial({color:new T.Color('#3f4144').convertSRGBToLinear(),roughness:.82});
 const TCAP_GEO={};
 function pisaCapGeo(len){const k=len.toFixed(3);if(TCAP_GEO[k])return TCAP_GEO[k];const{D,H,c}=TCAP,sh=new T.Shape();
@@ -625,7 +626,7 @@ function pisaCapGeo(len){const k=len.toFixed(3);if(TCAP_GEO[k])return TCAP_GEO[k
   return TCAP_GEO[k]=g;}
 function pisaCapRow(parent,x0,x1,top,zFront){const{L,D,H,gap}=TCAP,W=x1-x0,n=Math.ceil(W/L-1e-6),off=(W-n*L)/2;
   for(let i=0;i<n;i++){const a=Math.max(x0,x0+off+i*L),b=Math.min(x1,x0+off+(i+1)*L);if(b-a<.05)continue;
-    const m=new T.Mesh(pisaCapGeo(b-a-gap),TCAP_MAT);m.position.set(a+gap/2,top-H,zFront+.005-D);
+    const m=new T.Mesh(pisaCapGeo(b-a-gap),TCAP_MAT);m.position.set(a+gap/2,top-H,zFront+TCAP.over-D);
     m.castShadow=m.receiveShadow=true;(parent||scene).add(m);}}
 function retainRun(x0,x1,z0,z1,o={}){const top=o.top==null?BASE:o.top,mat=o.mat||M.xlGranite,P={vo:BASE};if(o.parent)P.parent=o.parent;let first=null;
   for(let k=0,y1=top;;k++){const s=k*XSB,last=y1-XLC<=-4.4,y0=last?-7:y1-XLC;
