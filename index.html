@@ -614,6 +614,19 @@ const retain=[];
 // laid course by course, each one stepping back toward the patio from the one below; the top course stays on the design
 // line, so the patio, seat walls and coping don't move. o: nx/px/nz/pz = which faces are exposed (step out going down).
 const XSB=5.875*Math.tan(3*Math.PI/180)/12;
+// Yard stair treads as built: Unilock Pisa XL Smooth coping in Midnight Charcoal - square units 15-3/4" x 12-7/8" x 3"
+// with a small chamfer on the top front edge (not fullnose), set flush with the riser face, joints centred on the stair.
+const TCAP={L:15.75/12,D:12.875/12,H:3/12,c:.3/12,gap:.012};
+const TCAP_MAT=new T.MeshStandardMaterial({color:new T.Color('#3f4144').convertSRGBToLinear(),roughness:.82});
+const TCAP_GEO={};
+function pisaCapGeo(len){const k=len.toFixed(3);if(TCAP_GEO[k])return TCAP_GEO[k];const{D,H,c}=TCAP,sh=new T.Shape();
+  sh.moveTo(0,0);sh.lineTo(D,0);sh.lineTo(D,H-c);sh.lineTo(D-c,H);sh.lineTo(0,H);sh.lineTo(0,0);
+  const g=new T.ExtrudeGeometry(sh,{depth:len,bevelEnabled:false});g.rotateY(-Math.PI/2);g.translate(len,0,0);   // profile in (z,y) with the chamfer toward +z, run along +x
+  return TCAP_GEO[k]=g;}
+function pisaCapRow(parent,x0,x1,top,zFront){const{L,D,H,gap}=TCAP,W=x1-x0,n=Math.ceil(W/L-1e-6),off=(W-n*L)/2;
+  for(let i=0;i<n;i++){const a=Math.max(x0,x0+off+i*L),b=Math.min(x1,x0+off+(i+1)*L);if(b-a<.05)continue;
+    const m=new T.Mesh(pisaCapGeo(b-a-gap),TCAP_MAT);m.position.set(a+gap/2,top-H,zFront+.005-D);
+    m.castShadow=m.receiveShadow=true;(parent||scene).add(m);}}
 function retainRun(x0,x1,z0,z1,o={}){const top=o.top==null?BASE:o.top,mat=o.mat||M.xlGranite,P={vo:BASE};if(o.parent)P.parent=o.parent;let first=null;
   for(let k=0,y1=top;;k++){const s=k*XSB,last=y1-XLC<=-4.4,y0=last?-7:y1-XLC;
     const m=box(x0-(o.nx?s:0),x1+(o.px?s:0),y0,y1,z0-(o.nz?s:0),z1+(o.pz?s:0),mat,P);if(!first)first=m;if(last)break;y1-=XLC;}
@@ -689,7 +702,7 @@ const NR=YARD[3].n, RISE=YARD[3].rise;
 // treads: one piece deep (no seam across the step), joints centred on the stair so each tread is a full 24" unit in the
 // middle with an equal cut at each end, lined up step to step; riser joints centred the same way
 [3,2].forEach(k=>{const SC=(ST0+ST1)/2, tu=SC-23.625/24, ru=SC-15.75/24, n=YARD[k].n, rise=YARD[k].rise, P={parent:YARD[k].g};
- const tread=(top,z0,z1)=>cop(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:tu,vo:z0-.04},'+z');
+ const tread=(top,z0,z1)=>pisaCapRow(P.parent,ST0,ST1,top,z1);
  box(ST0,ST1,-4,-COP,Z1-WALL,Z1,M.riser,{...P,uo:ru,vo:-COP}); tread(0,Z1-WALL,Z1);
  for(let i=1;i<n;i++){const top=-rise*i, z0=Z1+(i-1), z1=Z1+i;
    box(ST0,ST1,-5.5,top-COP,z0,z1,M.riser,{...P,uo:ru,vo:top-COP}); tread(top,z0,z1);}});
@@ -999,9 +1012,10 @@ function firePit(G,cx,cz,TL){const R=1.85, H=1.15;
      box(sd*1.0-.06,sd*1.0+.06,0,1.95,.85,1.0,W,P);box(sd*.85-.06,sd*.85+.06,0,1.05,-.85,-.7,W,P);});
    const bk=new T.Mesh(new T.BoxGeometry(1.8,2.6,.09),W);bk.rotation.x=-.33;bk.position.set(0,2.15,-1.05);bk.castShadow=true;c.add(bk);}
  const B={
-  straight(G,k,L){const g=gk(k),[n,r]=best([2,3,4,5,6],n=>-g(Z1+(n-1)*TD)/n,.55),P={parent:G};openTread(G,ST0,ST1);
+  straight(G,k,L){const g=gk(k),[n,r]=best([2,3,4,5,6],n=>-g(Z1+(n-1)*TD)/n,.55),P={parent:G};
+    box(ST0,ST1,-4,-TCAP.H,Z1-WALL,Z1,M.riser,{...P,uo:ST0,vo:-COP});pisaCapRow(G,ST0,ST1,0,Z1);
     for(let i=1;i<n;i++){const top=-r*i,z0=Z1+(i-1)*TD,z1=Z1+i*TD;box(ST0,ST1,-6.5,top-COP,z0,z1,M.riser,{...P,uo:ST0,vo:top-COP});
-      cop(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:ST0,vo:z0-.04},'+z');nose(L,ST0+1.1,top,z1);nose(L,ST1-1.1,top,z1);}
+      pisaCapRow(G,ST0,ST1,top,z1);nose(L,ST0+1.1,top,z1);nose(L,ST1-1.1,top,z1);}
     return {n,r};},
   cake(G,k,L){const g=gk(k),[n,r]=best([3,4,5,6,7],n=>-g(Z1+(n-1)*TD)/n,.52);openTread(G,ST0,ST1);
     for(let i=1;i<n;i++){const top=-r*i;slab(G,ST0-i*TD,ST1+i*TD,Z1,Z1+i*TD,top,'few',{cd:TD});nose(L,SCX-1.5,top,Z1+i*TD);nose(L,SCX+1.5,top,Z1+i*TD);}
@@ -2096,6 +2110,7 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
   add(img('pxlgr'),'Retaining wall + stair pillars','Unilock Pisa XL Smooth · Granite');
   if(accent.visible)add(img('pxlcc'),'Accent course','Pisa XL Smooth · Midnight Charcoal · second course down');
   add(img('endc'),'Wall cap band','Endura · Dark Charcoal, under the seat walls');
+  if(YSTAIR==='straight')add(col('#37393c'),'Yard stair treads','Pisa XL Smooth coping · Midnight Charcoal · square, chamfered edge');
   add(img(rc?'pxlcc':'pxlgr'),'Stair risers','Pisa XL Smooth · '+(rc?'Midnight Charcoal':'Granite'));
   add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
   add(col('#6e4b36'),'Gazebo','Yardistry 12×14 with Steel · Mocha Brown, black steel trusses, graphite roof');
