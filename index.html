@@ -621,9 +621,14 @@ function retainRun(x0,x1,z0,z1,o={}){const top=o.top==null?BASE:o.top,mat=o.mat|
 // coping is laid from the outside corners: the side-wall run carries a full unit around the corner (out to the front
 // overhang), the front run butts into it, and the joints count off in 24" units from that corner so any cut piece lands
 // at the stair pier or the walkout end, not at the corner. c = {s:extend start, e:extend end, from:'start'|'end'}
-function seatRun(x0,x1,z0,z1,c={}){const PP=c.parent?{parent:c.parent}:{};box(x0+0.01,x1-0.01,BASE,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE,...PP});
+// As built: the retaining wall is capped with charcoal Endura at patio level, and the Pisa Edge seat wall sits on that
+// cap band (so from the yard: granite courses, the charcoal accent course, one granite course, the charcoal cap band,
+// the seat wall, its charcoal coping).
+function seatRun(x0,x1,z0,z1,c={}){const PP=c.parent?{parent:c.parent}:{};box(x0+0.01,x1-0.01,BASE+COP,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE,...PP});
   const alongX=(x1-x0)>(z1-z0), ov=(COPD-WALL)/2, ox=alongX?0:ov, oz=alongX?ov:0, s0=c.s||0, s1=c.e||0;
   const a0=(alongX?x0:z0)-s0, a1=(alongX?x1:z1)+s1, org=c.from==='end'?a1:a0;
+  if(alongX)cop(a0,a1,BASE,BASE+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz,...PP},z0>Z1-3?'+z':'-z');
+  else cop(x0-ox,x1+ox,BASE,BASE+COP,a0,a1,COPZ,{uo:x0-ox,vo:org,...PP},x0<1?'-x':'+x',[a0,Z1-WALL-(COPD-WALL)/2]);
   // rounded edge toward the seating (patio) side; side runs stay square where the front run butts in at the corner
   if(alongX)cop(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz,...PP},'-z');
   else cop(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org,...PP},x0<1?'+x':'-x',[a0,Z1-WALL-(COPD-WALL)/2]);}
@@ -668,10 +673,10 @@ const pavHouse=new T.Group(), pavHouseAcc=new T.Group(); pavHouse.visible=false;
  BAYHUG.push(box(BAY0-B,BAY0,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY0-B,vo:B}),box(BAY1,BAY1+B,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY1,vo:B}));  // hugging the bay sides
  box(WALL,WALL+B,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:WALL,vo:B}); box(PW-WALL-B,PW-WALL,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:PW-WALL-B,vo:B});
  [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>{retainRun(a,b,0,Z0,{parent:pavHouse,push:false,nx:a<1,px:a>1});
-   box(a-.006,b+.006,BASE-XLC,BASE,-.006,Z0,M.xlCharcoal,{vo:BASE,parent:pavHouseAcc,cast:false});
+   box(a-.006-XSB,b+.006+XSB,BASE-2*XLC,BASE-XLC,-.006,Z0,M.xlCharcoal,{vo:BASE,parent:pavHouseAcc,cast:false});
    cop(a-.08,b+.08,BASE,BASE+COP,0,Z0,COPZ,{parent:pavHouse,uo:a,vo:0},a<1?'-x':'+x');});})();
-retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBox,e=.006;
-  box(b.min.x-e,b.max.x+e,BASE-XLC,BASE,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:m.userData.fw?ACC[m.userData.fw]:accent,cast:false});});
+retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBox,e=(b.max.y-b.min.y>1?0:XSB)+.006;
+  box(b.min.x-e,b.max.x+e,BASE-2*XLC,BASE-XLC,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:m.userData.fw?ACC[m.userData.fw]:accent,cast:false});});
 
 // yard stair: 5 risers of ~7-5/8" from the patio to the lawn, 12" treads, Pisa Granite risers + Endura treads
 // yard risers sized to the measured grade: 4 @ ~6" with 3 door steps, 5 @ ~6-5/8" with the patio a riser higher
@@ -2089,7 +2094,8 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
   add(img('endc'),'Coping, stair treads, landing frame','Unilock Endura · Dark Charcoal · Fullnose');
   add(img('pe_gr'),'Seat walls','Unilock Pisa Edge · Granite');
   add(img('pxlgr'),'Retaining wall + stair pillars','Unilock Pisa XL Smooth · Granite');
-  if(accent.visible)add(img('pxlcc'),'Accent course','Pisa XL Smooth · Midnight Charcoal');
+  if(accent.visible)add(img('pxlcc'),'Accent course','Pisa XL Smooth · Midnight Charcoal · second course down');
+  add(img('endc'),'Wall cap band','Endura · Dark Charcoal, under the seat walls');
   add(img(rc?'pxlcc':'pxlgr'),'Stair risers','Pisa XL Smooth · '+(rc?'Midnight Charcoal':'Granite'));
   add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
   add(col('#6e4b36'),'Gazebo','Yardistry 12×14 with Steel · Mocha Brown, black steel trusses, graphite roof');
