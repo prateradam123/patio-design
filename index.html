@@ -596,6 +596,20 @@ const retain=[];
 // laid course by course, each one stepping back toward the patio from the one below; the top course stays on the design
 // line, so the patio, seat walls and coping don't move. o: nx/px/nz/pz = which faces are exposed (step out going down).
 const XSB=5.875*Math.tan(3*Math.PI/180)/12;
+// Yard stair treads as built: Unilock Pisa XL Smooth coping in Midnight Charcoal (15-3/4" x 12-7/8" x 3", small chamfer
+// on the top edge, not fullnose), turned lengthwise and cut so each tread runs 12" back from a 1" overhang past the riser,
+// factory edge to the front; units 12-7/8" wide with the joints centred on the stair.
+const TCAP={L:12.875/12,D:13/12,H:3/12,c:.3/12,gap:.012,over:1/12};
+const TCAP_MAT=new T.MeshStandardMaterial({color:new T.Color('#3f4144').convertSRGBToLinear(),roughness:.82});
+const TCAP_GEO={};
+function pisaCapGeo(len){const k=len.toFixed(3);if(TCAP_GEO[k])return TCAP_GEO[k];const{D,H,c}=TCAP,sh=new T.Shape();
+  sh.moveTo(0,0);sh.lineTo(D,0);sh.lineTo(D,H-c);sh.lineTo(D-c,H);sh.lineTo(0,H);sh.lineTo(0,0);
+  const g=new T.ExtrudeGeometry(sh,{depth:len,bevelEnabled:false});g.rotateY(-Math.PI/2);g.translate(len,0,0);
+  return TCAP_GEO[k]=g;}
+function pisaCapRow(parent,x0,x1,top,zFront){const{L,D,H,gap}=TCAP,W=x1-x0,n=Math.ceil(W/L-1e-6),off=(W-n*L)/2;
+  for(let i=0;i<n;i++){const a=Math.max(x0,x0+off+i*L),b=Math.min(x1,x0+off+(i+1)*L);if(b-a<.05)continue;
+    const m=new T.Mesh(pisaCapGeo(b-a-gap),TCAP_MAT);m.position.set(a+gap/2,top-H,zFront+TCAP.over-D);
+    m.castShadow=m.receiveShadow=true;(parent||scene).add(m);}}
 function retainRun(x0,x1,z0,z1,o={}){const top=o.top==null?BASE:o.top,mat=o.mat||M.xlGranite,P={vo:BASE};if(o.parent)P.parent=o.parent;let first=null;
   for(let k=0,y1=top;;k++){const s=k*XSB,last=y1-XLC<=-4.4,y0=last?-7:y1-XLC;
     const m=box(x0-(o.nx?s:0),x1+(o.px?s:0),y0,y1,z0-(o.nz?s:0),z1+(o.pz?s:0),mat,P);if(!first)first=m;if(last)break;y1-=XLC;}
@@ -603,9 +617,14 @@ function retainRun(x0,x1,z0,z1,o={}){const top=o.top==null?BASE:o.top,mat=o.mat|
 // coping is laid from the outside corners: the side-wall run carries a full unit around the corner (out to the front
 // overhang), the front run butts into it, and the joints count off in 24" units from that corner so any cut piece lands
 // at the stair pier or the walkout end, not at the corner. c = {s:extend start, e:extend end, from:'start'|'end'}
-function seatRun(x0,x1,z0,z1,c={}){const PP=c.parent?{parent:c.parent}:{};box(x0+0.01,x1-0.01,BASE,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE,...PP});
+// As built: the retaining wall is capped with charcoal Endura at patio level, and the Pisa Edge seat wall sits on that
+// cap band (so from the yard: granite courses, the charcoal accent course, one granite course, the charcoal cap band,
+// the seat wall, its charcoal coping).
+function seatRun(x0,x1,z0,z1,c={}){const PP=c.parent?{parent:c.parent}:{};box(x0+0.01,x1-0.01,BASE+COP,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE,...PP});
   const alongX=(x1-x0)>(z1-z0), ov=(COPD-WALL)/2, ox=alongX?0:ov, oz=alongX?ov:0, s0=c.s||0, s1=c.e||0;
   const a0=(alongX?x0:z0)-s0, a1=(alongX?x1:z1)+s1, org=c.from==='end'?a1:a0;
+  if(alongX)cop(a0,a1,BASE,BASE+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz,...PP},z0>Z1-3?'+z':'-z');
+  else cop(x0-ox,x1+ox,BASE,BASE+COP,a0,a1,COPZ,{uo:x0-ox,vo:org,...PP},x0<1?'-x':'+x',[a0,Z1-WALL-(COPD-WALL)/2]);
   // rounded edge toward the seating (patio) side; side runs stay square where the front run butts in at the corner
   if(alongX)cop(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz,...PP},'-z');
   else cop(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org,...PP},x0<1?'+x':'-x',[a0,Z1-WALL-(COPD-WALL)/2]);}
@@ -650,10 +669,10 @@ const pavHouse=new T.Group(), pavHouseAcc=new T.Group(); pavHouse.visible=false;
  BAYHUG.push(box(BAY0-B,BAY0,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY0-B,vo:B}),box(BAY1,BAY1+B,-0.6,0.02,B,Z0,M.borderZ,{...P,uo:BAY1,vo:B}));  // hugging the bay sides
  box(WALL,WALL+B,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:WALL,vo:B}); box(PW-WALL-B,PW-WALL,-0.6,0.02,B,Z0+B,M.borderZ,{...P,uo:PW-WALL-B,vo:B});
  [[0,WALL],[PW-WALL,PW]].forEach(([a,b])=>{retainRun(a,b,0,Z0,{parent:pavHouse,push:false,nx:a<1,px:a>1});
-   box(a-.006,b+.006,BASE-XLC,BASE,-.006,Z0,M.xlCharcoal,{vo:BASE,parent:pavHouseAcc,cast:false});
+   box(a-.006-XSB,b+.006+XSB,BASE-2*XLC,BASE-XLC,-.006,Z0,M.xlCharcoal,{vo:BASE,parent:pavHouseAcc,cast:false});
    cop(a-.08,b+.08,BASE,BASE+COP,0,Z0,COPZ,{parent:pavHouse,uo:a,vo:0},a<1?'-x':'+x');});})();
-retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBox,e=.006;
-  box(b.min.x-e,b.max.x+e,BASE-XLC,BASE,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:m.userData.fw?ACC[m.userData.fw]:accent,cast:false});});
+retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBox,e=(b.max.y-b.min.y>1?0:XSB)+.006;
+  box(b.min.x-e,b.max.x+e,BASE-2*XLC,BASE-XLC,b.min.z-e,b.max.z+e,M.xlCharcoal,{vo:BASE,parent:m.userData.fw?ACC[m.userData.fw]:accent,cast:false});});
 
 // yard stair: 5 risers of ~7-5/8" from the patio to the lawn, 12" treads, Pisa Granite risers + Endura treads
 // yard risers sized to the measured grade: 4 @ ~6" with 3 door steps, 5 @ ~6-5/8" with the patio a riser higher
@@ -664,7 +683,7 @@ const NR=YARD[3].n, RISE=YARD[3].rise;
 // treads: one piece deep (no seam across the step), joints centred on the stair so each tread is a full 24" unit in the
 // middle with an equal cut at each end, lined up step to step; riser joints centred the same way
 [3,2].forEach(k=>{const SC=(ST0+ST1)/2, tu=SC-23.625/24, ru=SC-15.75/24, n=YARD[k].n, rise=YARD[k].rise, P={parent:YARD[k].g};
- const tread=(top,z0,z1)=>cop(ST0-.03,ST1+.03,top-COP,top,z0,z1+.06,M.copX,{...P,uo:tu,vo:z0-.04},'+z');
+ const tread=(top,z0,z1)=>pisaCapRow(P.parent,ST0,ST1,top,z1);
  box(ST0,ST1,-4,-COP,Z1-WALL,Z1,M.riser,{...P,uo:ru,vo:-COP}); tread(0,Z1-WALL,Z1);
  for(let i=1;i<n;i++){const top=-rise*i, z0=Z1+(i-1), z1=Z1+i;
    box(ST0,ST1,-5.5,top-COP,z0,z1,M.riser,{...P,uo:ru,vo:top-COP}); tread(top,z0,z1);}});
@@ -2034,7 +2053,9 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
   add(img('endc'),'Coping, stair treads, landing frame','Unilock Endura · Dark Charcoal · Fullnose');
   add(img('pe_gr'),'Seat walls','Unilock Pisa Edge · Granite');
   add(img('pxlgr'),'Retaining wall + stair pillars','Unilock Pisa XL Smooth · Granite');
-  if(accent.visible)add(img('pxlcc'),'Accent course','Pisa XL Smooth · Midnight Charcoal');
+  if(accent.visible)add(img('pxlcc'),'Accent course','Pisa XL Smooth · Midnight Charcoal · second course down');
+  add(img('endc'),'Wall cap band','Endura · Dark Charcoal, under the seat walls');
+  if(YSTAIR==='straight')add(col('#37393c'),'Yard stair treads','Pisa XL Smooth coping · Midnight Charcoal · square, chamfered edge');
   add(img(rc?'pxlcc':'pxlgr'),'Stair risers','Pisa XL Smooth · '+(rc?'Midnight Charcoal':'Granite'));
   add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
   add(col('#b27a47'),'Gazebo','Yardistry Meridian 12×12 · cedar');
