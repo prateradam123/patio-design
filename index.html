@@ -684,7 +684,7 @@ retain.forEach(m=>{m.geometry.computeBoundingBox();const b=m.geometry.boundingBo
 // yard risers sized to the measured grade: 4 @ ~6" with 3 door steps, 5 @ ~6-5/8" with the patio a riser higher
 const YARD={3:{n:4,g:new T.Group()},2:{n:5,g:new T.Group()}};
 {const c=[4,5,6,7].map(n=>({n,r:(LIFT2-gradeA(Z1+n-1))/n})).sort((a,b)=>Math.abs(a.r-.54)-Math.abs(b.r-.54))[0];YARD[2].n=c.n;
- const d=[3,4,5,6].map(n=>({n,r:-gradeA(Z1+n-1)/n})).sort((a,b)=>Math.abs(a.r-.54)-Math.abs(b.r-.54))[0];YARD[3].n=d.n;}
+ YARD[3].n=5;}   // original 3-step plan: 5 risers down to the yard
 YARD[3].rise=-gradeA(Z1+YARD[3].n-1)/YARD[3].n; YARD[2].rise=(LIFT2-gradeA(Z1+YARD[2].n-1))/YARD[2].n;
 scene.add(YARD[3].g,YARD[2].g); YARD[2].g.visible=false;
 const NR=YARD[3].n, RISE=YARD[3].rise;
