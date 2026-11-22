@@ -512,11 +512,10 @@ const ST0=14, ST1=19;                           // yard stair: 14'-0" of wall, 5
 // (7-3/4"), shown by dropping the house and the yard (worldG) instead, so everything on the patio stays where it is.
 // DR: door riser of the original 3-step plan. LIFT2: how much higher the patio is actually being built - pavers 14" under
 // the old landing, which was 6-1/2" under the slider sill, so 20-1/2" below the sill: 3 even risers of ~6-7/8" (2 steps).
-// FALL: set from the tape at the far front corner - 21" from the lawn to the top of the wall with two more courses to go,
-// so about 32-3/4" to the top of the wall courses (under the cap band) as built. That's about 22-1/4" of fall from the door
-// (his "21 inches"), and it leaves about 4 courses showing at the corner on the original 3-step plan.
-const FRONT_WALL=(21+2*5.875)/12, SILL_TO_SOD_M=33/12;
-const DR=SILL/4, LIFT2=SILL-20.5/12, DR2=20.5/12/3, FALL=((FRONT_WALL-BASE)-(SILL_TO_SOD_M-20.5/12))/(Z1-Z0), SILL_TO_SOD=33/12, gradeA=z=>-(SILL_TO_SOD-SILL)-FALL*(Math.max(z,0)-Z0);
+// FALL: set so the original 3-step plan shows 4 full courses at the front corner plus about an inch of the buried course
+// (under the cap band). Built 10-1/2" higher, that's just under 6 courses as built.
+const ORIG_FRONT=(4*5.875+1)/12, SILL_TO_SOD_M=33/12;
+const DR=SILL/4, LIFT2=SILL-20.5/12, DR2=20.5/12/3, FALL=((ORIG_FRONT-BASE)-(SILL_TO_SOD_M-SILL))/(Z1-Z0), SILL_TO_SOD=33/12, gradeA=z=>-(SILL_TO_SOD-SILL)-FALL*(Math.max(z,0)-Z0);
 let LIFT=0; const grade=z=>gradeA(z)-LIFT;
 const ground=z=>grade(z);
 
