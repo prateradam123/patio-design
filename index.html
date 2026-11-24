@@ -244,6 +244,7 @@ body.closed .openbtn{display:flex}
       <button data-riser="xlcc">XL Smooth Charcoal</button>
     </div>
     <div class="row"><label for="t-accent">Charcoal accent course</label><button class="sw" id="t-accent" role="switch" aria-checked="true"></button></div>
+    <div class="row"><label for="t-gcap">Granite caps</label><button class="sw" id="t-gcap" role="switch" aria-checked="false"></button></div>
     <div class="row"><label for="t-rug">Gazebo border</label><button class="sw" id="t-rug" role="switch" aria-checked="false"></button></div>
     <div class="row"><label for="t-furn">Furniture</label><button class="sw" id="t-furn" role="switch" aria-checked="true"></button></div>
     <div class="row"><label>Cooking</label></div>
@@ -439,6 +440,9 @@ function setRiser(k){M.riser.map=RISER[k]||RISER.xlgr;M.riser.needsUpdate=true;}
 // Endura Dark Charcoal: the swatch is a close-up (~4.5" across), so it's tiled at ~110 px/in on a 16 px/in canvas
 M.copX=mat(blockTex('endc',23.625,14,4,1,{stack:true,tile:true,sppi:110,ppi:16,jw:2,joint:'rgba(18,18,18,.9)'}),.8);
 M.copZ=mat(blockTex('endc',23.625,14,4,1,{stack:true,tile:true,sppi:110,ppi:16,jw:2,joint:'rgba(18,18,18,.9)',rotate:true}),.8);
+// Wall cap band (under the seat walls): its own materials so it can switch between charcoal (as built) and granite
+M.bandX=mat(M.copX.map,.8); M.bandZ=mat(M.copZ.map,.8);
+const BAND_TEX={cc:[M.copX.map,M.copZ.map], gr:[blockTex('pxlgr',23.625,14,4,1,{stack:true,sppi:9}),blockTex('pxlgr',23.625,14,4,1,{stack:true,sppi:9,rotate:true})]};
 // Unilock Holland Premier, Dark Charcoal: 3-7/8" x 7-7/8", one soldier course (long side across the border), joints lined up
 M.borderX=mat(blockTex('bhdc',3.875,7.875,16,1,{sppi:8,stack:true}));
 M.borderZ=mat(blockTex('bhdc',3.875,7.875,16,1,{sppi:8,stack:true,rotate:true}));
@@ -493,7 +497,7 @@ function beaconHill(zOrigin){const P=6, W=BH.WX*12*P, H=BH.WZ*12*P, c=document.c
   img.src=TEX.gf;return t;}
 M.field=new T.MeshStandardMaterial({roughness:.9});   // map set once the border width is known (below)
 function fieldFor(toH){const old=M.field.map;M.field.map=beaconHill(toH?B:Z0+B);M.field.needsUpdate=true;if(old)old.dispose();}
-const COPZ=[M.copX,M.copX,M.copZ,M.copZ,M.copX,M.copX];
+const COPZ=[M.copX,M.copX,M.copZ,M.copZ,M.copX,M.copX], BANDZ=[M.bandX,M.bandX,M.bandZ,M.bandZ,M.bandX,M.bandX];
 const BAYHUG=[]; let SOFA_X=0, LS_SEAT=null, SEC_SET=null; const SWV=[], DINE=[];
 
 // ---- layout (feet), from the latest drawings. x: along the house, EAST end at x=0 (left when you face the
@@ -589,7 +593,7 @@ function noseRun(a0,a1,y0,y1,e,side,o){const r=(y1-y0)/2,yc=(y0+y1)/2,N=12,ax=si
   [[a0,-1],[a1,1]].forEach(([a,dir])=>{const c=P(a,yc,e);uv.push(a-uOff,.5);const d=ax?[dir,0,0]:[0,0,dir];
     for(let i=0;i<N;i++)tri(c,ring[i][dir<0?0:1],ring[i+1][dir<0?0:1],d);});
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
-  const m=new T.Mesh(g,M.copX);m.castShadow=o.cast!==false;m.receiveShadow=true;(o.parent||scene).add(m);return m;}
+  const m=new T.Mesh(g,o.nmat||M.copX);m.castShadow=o.cast!==false;m.receiveShadow=true;(o.parent||scene).add(m);return m;}
 function cop(x0,x1,y0,y1,z0,z1,mat,o,side,lim){if(!side)return box(x0,x1,y0,y1,z0,z1,mat,o);
   const ax=side[1]==='z',A0=ax?x0:z0,A1=ax?x1:z1,l0=lim?Math.max(A0,lim[0]):A0,l1=lim?Math.min(A1,lim[1]):A1,R=(y1-y0)/2,sg=side[0]==='+'?1:-1;
   const seg=(a,b,inset)=>{if(b-a<1e-4)return;let X0=x0,X1=x1,Z0_=z0,Z1_=z1;if(ax){X0=a;X1=b;}else{Z0_=a;Z1_=b;}
@@ -628,8 +632,8 @@ function retainRun(x0,x1,z0,z1,o={}){const top=o.top==null?BASE:o.top,mat=o.mat|
 function seatRun(x0,x1,z0,z1,c={}){const PP=c.parent?{parent:c.parent}:{};box(x0+0.01,x1-0.01,BASE+COP,SEATTOP,z0+0.01,z1-0.01,M.edge,{vo:BASE,...PP});
   const alongX=(x1-x0)>(z1-z0), ov=(COPD-WALL)/2, ox=alongX?0:ov, oz=alongX?ov:0, s0=c.s||0, s1=c.e||0;
   const a0=(alongX?x0:z0)-s0, a1=(alongX?x1:z1)+s1, org=c.from==='end'?a1:a0;
-  if(alongX)cop(a0,a1,BASE,BASE+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz,...PP},z0>Z1-3?'+z':'-z');
-  else cop(x0-ox,x1+ox,BASE,BASE+COP,a0,a1,COPZ,{uo:x0-ox,vo:org,...PP},x0<1?'-x':'+x',[a0,Z1-WALL-(COPD-WALL)/2]);
+  if(alongX)cop(a0,a1,BASE,BASE+COP,z0-oz,z1+oz,M.bandX,{uo:org,vo:z0-oz,...PP,nmat:M.bandX},z0>Z1-3?'+z':'-z');
+  else cop(x0-ox,x1+ox,BASE,BASE+COP,a0,a1,BANDZ,{uo:x0-ox,vo:org,...PP,nmat:M.bandX},x0<1?'-x':'+x',[a0,Z1-WALL-(COPD-WALL)/2]);
   // rounded edge toward the seating (patio) side; side runs stay square where the front run butts in at the corner
   if(alongX)cop(a0,a1,SEATTOP,SEATTOP+COP,z0-oz,z1+oz,M.copX,{uo:org,vo:z0-oz,...PP},'-z');
   else cop(x0-ox,x1+ox,SEATTOP,SEATTOP+COP,a0,a1,COPZ,{uo:x0-ox,vo:org,...PP},x0<1?'+x':'-x',[a0,Z1-WALL-(COPD-WALL)/2]);}
@@ -1380,6 +1384,11 @@ window.__cover=m=>{setBedTop(m);press('[data-cover]',document.querySelector(`[da
 window.__p2=on=>{Object.keys(P2).forEach(k=>P2[k]=on);applyP2();};
 window.__bed=m=>{if(m==='off'){P2.bed=false;applyP2();return;}treeAge=m;press('[data-age]',document.querySelector(`[data-age="${m}"]`));P2.bed=true;applyP2();};
 const rugSwitch=sw('t-rug',on=>{gzRug.visible=on;});
+// Granite caps: wall cap band + yard stair treads in granite, so the charcoal accent course is the only dark band on the wall
+let GCAP=false;
+function setGCap(on){GCAP=on;const t=BAND_TEX[on?'gr':'cc'];M.bandX.map=t[0];M.bandZ.map=t[1];M.bandX.needsUpdate=M.bandZ.needsUpdate=true;
+  TCAP_MAT.color.set(on?'#8b8c8b':'#3f4144').convertSRGBToLinear();}
+sw('t-gcap',setGCap); window.__gcap=on=>{setGCap(on);document.getElementById('t-gcap').setAttribute('aria-checked',on);};
 window.__rug=on=>{gzRug.visible=on;rugSwitch.setAttribute('aria-checked',on);};
 window.__pw=on=>{P2.pw=on;applyP2();};
 
@@ -2061,8 +2070,8 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
   add(img('pe_gr'),'Seat walls','Unilock Pisa Edge · Granite');
   add(img('pxlgr'),'Retaining wall + stair pillars','Unilock Pisa XL Smooth · Granite');
   if(accent.visible)add(img('pxlcc'),'Accent course','Pisa XL Smooth · Midnight Charcoal · second course down');
-  add(img('endc'),'Wall cap band','Endura · Dark Charcoal, under the seat walls');
-  if(YSTAIR==='straight')add(col('#37393c'),'Yard stair treads','Pisa XL Smooth coping · Midnight Charcoal · square, chamfered edge');
+  add(img(GCAP?'pxlgr':'endc'),'Wall cap band',(GCAP?'Granite':'Endura · Dark Charcoal')+', under the seat walls');
+  if(YSTAIR==='straight')add(col(GCAP?'#8b8c8b':'#37393c'),'Yard stair treads','Pisa XL Smooth coping · '+(GCAP?'Granite':'Midnight Charcoal')+' · square, chamfered edge');
   add(img(rc?'pxlcc':'pxlgr'),'Stair risers','Pisa XL Smooth · '+(rc?'Midnight Charcoal':'Granite'));
   add(img('endc')+';filter:brightness(.72)','Pillar caps','Unilock Ledgestone · 29⅛" square, dark');
   add(col('#b27a47'),'Gazebo','Yardistry Meridian 12×12 · cedar');
@@ -2096,7 +2105,7 @@ const LEG=(function(){const el=document.getElementById('legend'),list=document.g
  document.getElementById('panel').addEventListener('click',()=>setTimeout(refresh,0));
  return {refresh,areas};})();
 window.__legend=()=>{LEG.refresh();return {rows:[...document.querySelectorAll('#lgList .lgr b')].map(b=>b.textContent),area:document.getElementById('lgArea').innerText,a:LEG.areas()};};
-const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person','t-legend'];
+const SWL=['t-p2bed','t-p2pw','t-p2rock','t-accent','t-rug','t-furn','t-fire','t-hbar','t-person','t-legend','t-gcap'];
 const SGL=['edge','age','cover','cook','deck','seat','umb','season','lights','dims','riser','steps','lift','ystair'];
 const r2=v=>Math.round(v*100)/100;
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
